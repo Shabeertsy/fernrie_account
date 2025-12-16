@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     Plus,
     ArrowUpCircle,
@@ -19,6 +20,7 @@ import { partnersAPI, type Partner } from '../api/partners';
 import type { CompanyTransaction } from '../types';
 
 const CompanyAccounts: React.FC = () => {
+    const navigate = useNavigate();
     const [transactions, setTransactions] = useState<CompanyTransaction[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(false);
@@ -257,7 +259,11 @@ const CompanyAccounts: React.FC = () => {
                                 const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 
                                 return (
-                                    <Card key={t.id} className="p-4 flex items-center justify-between hover:shadow-md transition-shadow group">
+                                    <Card 
+                                        key={t.id} 
+                                        className="p-4 flex items-center justify-between hover:shadow-md transition-shadow group cursor-pointer"
+                                        onClick={() => navigate(`/company-accounts/${t.id}`)}
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                                                 t.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
@@ -282,13 +288,13 @@ const CompanyAccounts: React.FC = () => {
                                             {/* Actions */}
                                             <div className="flex items-center gap-1">
                                                 <button 
-                                                    onClick={() => handleEdit(t)}
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(t); }}
                                                     className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(t.id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 size={16} />

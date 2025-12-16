@@ -11,6 +11,7 @@ import Todo from './pages/Todo';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import CompanyAccounts from './pages/CompanyAccounts';
+import TransactionDetail from './pages/TransactionDetail';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
             <Route path="todo" element={<Todo />} />
             <Route path="settings" element={<Settings />} />
             <Route path="company-accounts" element={<CompanyAccounts />} />
+            <Route path="company-accounts/:id" element={<TransactionDetail />} />
           </Route>
 
           {/* Catch all - redirect to login */}
