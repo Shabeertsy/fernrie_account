@@ -87,8 +87,21 @@ export interface Role {
     updatedAt: string;
 }
 
+
 export interface UserWithRole extends User {
     roleId: string;
     roleName: string;
+}
+
+export interface CompanyTransaction {
+    id: number;
+    transaction_type: 'income' | 'expense';
+    amount: string; // DecimalField comes as string usually, or number
+    person: number | null; // ForeignKey to User
+    person_name?: string; // If serializer provides it
+    date_time: string;
+    split_amount: boolean;
+    image: string | null;
+    notes: string | null;
 }
 

@@ -8,6 +8,7 @@ import {
     Settings,
     LogOut,
     X,
+    Building2,
     Receipt
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -25,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: Receipt, label: 'Billing', path: '/billing' },
+        { icon: Building2, label: 'Company', path: '/company-accounts' },
         { icon: UserPlus, label: 'Partners', path: '/partners' },
         { icon: Users, label: 'Clients', path: '/clients' },
         { icon: CheckSquare, label: 'Todo', path: '/todo' },

@@ -108,13 +108,8 @@ const Login: React.FC = () => {
                         </Button>
                     </form>
 
-                    {/* Demo Credentials */}
                     <div className="mt-6 pt-6 border-t border-slate-100">
-                        <p className="text-xs text-slate-500 text-center mb-2">Demo Credentials:</p>
-                        <div className="bg-slate-50 rounded-lg p-3 text-xs font-mono text-slate-600 space-y-1">
-                            <p><span className="text-slate-400">Email:</span> admin@fernrei.com</p>
-                            <p><span className="text-slate-400">Password:</span> admin123</p>
-                        </div>
+                      
                     </div>
                 </Card>
 

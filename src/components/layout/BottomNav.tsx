@@ -5,14 +5,16 @@ import {
     Receipt,
     UserPlus,
     Users,
-    CheckSquare
+    CheckSquare,
+    Building2
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const BottomNav: React.FC = () => {
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+        { icon: LayoutDashboard, label: 'Home', path: '/' },
         { icon: Receipt, label: 'Billing', path: '/billing' },
+        { icon: Building2, label: 'Company', path: '/company-accounts' },
         { icon: Users, label: 'Clients', path: '/clients' },
         { icon: UserPlus, label: 'Partners', path: '/partners'},
         { icon: CheckSquare, label: 'Todo', path: '/todo' },
@@ -20,7 +22,7 @@ const BottomNav: React.FC = () => {
 
     return (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-bottom">
-            <div className="grid grid-cols-5 h-16">
+            <div className="grid grid-cols-6 h-16">
                 {navItems.map((item) => (
                     <NavLink
                         key={item.path}

@@ -6,7 +6,6 @@ import {
     Phone, 
     Edit2, 
     MessageCircle, 
-    UserPlus, 
     Briefcase, 
     PieChart, 
     Clock,
@@ -25,6 +24,7 @@ interface Partner {
     equity: string;
     joinedDate: string;
     avatar: string;
+    totalRevenue: number;
 }
 
 const Partners: React.FC = () => {
@@ -43,7 +43,8 @@ const Partners: React.FC = () => {
             phone: '+91 98765 43210',
             equity: '35%',
             joinedDate: 'Jan 2023',
-            avatar: 'S'
+            avatar: 'S',
+            totalRevenue: 150000
         },
         {
             id: '2',
@@ -55,7 +56,8 @@ const Partners: React.FC = () => {
             phone: '+91 98765 43211',
             equity: '15%',
             joinedDate: 'Mar 2023',
-            avatar: 'D'
+            avatar: 'D',
+            totalRevenue: 85000
         },
         {
             id: '3',
@@ -67,7 +69,8 @@ const Partners: React.FC = () => {
             phone: '+91 98765 43212',
             equity: '10%',
             joinedDate: 'Jun 2023',
-            avatar: 'M'
+            avatar: 'M',
+            totalRevenue: 45000
         },
         {
             id: '4',
@@ -79,7 +82,8 @@ const Partners: React.FC = () => {
             phone: '+91 98765 43213',
             equity: '20%',
             joinedDate: 'Aug 2023',
-            avatar: 'E'
+            avatar: 'E',
+            totalRevenue: 92000
         }
     ]);
 
@@ -101,10 +105,7 @@ const Partners: React.FC = () => {
                     <p className="text-xs sm:text-base text-slate-500 mt-0.5">Manage your business partners</p>
                 </div>
                 <div className="hidden sm:flex items-center gap-3">
-                    <button className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-sm active:scale-95">
-                        <UserPlus size={20} />
-                        <span>Add Partner</span>
-                    </button>
+                  
                 </div>
             </div>
 
@@ -159,10 +160,7 @@ const Partners: React.FC = () => {
                 </div>
             </div>
 
-            {/* Mobile Floating Action Button */}
-            <button className="fixed bottom-20 right-4 w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center sm:hidden z-50 active:scale-95 hover:bg-emerald-700 transition-colors">
-                <Plus size={24} />
-            </button>
+
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -192,8 +190,8 @@ const Partners: React.FC = () => {
                 </div>
             </div>
 
-            {/* Partners Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            {/* Partners Grid (Desktop) */}
+            <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {filteredPartners.map((partner) => (
                     <div key={partner.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-4">
@@ -228,7 +226,8 @@ const Partners: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
                                 <DollarSign size={14} className="text-slate-400" />
-                                <span>Equity: {partner.equity}</span>
+                                <span className="flex-1">Equity: {partner.equity}</span>
+                                <span className="font-semibold text-emerald-600">₹{partner.totalRevenue.toLocaleString()}</span>
                             </div>
                         </div>
 
@@ -241,6 +240,33 @@ const Partners: React.FC = () => {
                                 <Edit2 size={16} />
                                 <span className="text-xs font-semibold">Edit</span>
                             </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Mobile List View */}
+            <div className="space-y-3 sm:hidden">
+                {filteredPartners.map((partner) => (
+                    <div key={partner.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                partner.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                                <span className="font-bold text-lg">{partner.avatar}</span>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-900">{partner.name}</h3>
+                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                    <span>{partner.role}</span>
+                                    <span>•</span>
+                                    <span>{partner.joinedDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="font-bold text-emerald-600">+₹{partner.totalRevenue.toLocaleString()}</p>
+                            <p className="text-xs text-slate-400">{partner.equity} Equity</p>
                         </div>
                     </div>
                 ))}

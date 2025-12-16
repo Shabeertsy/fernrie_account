@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Plus, TrendingUp, TrendingDown, DollarSign, Eye, Phone, ChevronRight } from 'lucide-react';
+import { Search, Plus, TrendingUp, TrendingDown, DollarSign, Eye, Phone, ChevronRight, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '../components/common/Button';
+import { Input } from '../components/common/Input';
+import { Modal } from '../components/common/Modal';
 
 interface Client {
     id: string;
@@ -11,13 +14,54 @@ interface Client {
     totalIncome: number;
     profit: number;
     status: 'active' | 'inactive';
+    splitAmount?: number;
+    image?: string;
 }
 
 const Clients: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        splitAmount: '',
+        image: null as File | null
+    });
+
+    const handleAddClient = (e: React.FormEvent) => {
+        e.preventDefault();
+        const newClient: Client = {
+            id: Date.now().toString(),
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            totalExpense: 0,
+            totalIncome: 0,
+            profit: 0,
+            status: 'active',
+            splitAmount: parseFloat(formData.splitAmount) || 0,
+            image: formData.image ? URL.createObjectURL(formData.image) : undefined
+        };
+        setClients([newClient, ...clients]);
+        setIsModalOpen(false);
+        setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            splitAmount: '',
+            image: null
+        });
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFormData({ ...formData, image: e.target.files[0] });
+        }
+    };
 
     // Mock data - replace with API call
-    const [clients] = useState<Client[]>([
+    const [clients, setClients] = useState<Client[]>([
         {
             id: '1',
             name: 'ABC Corporation',
@@ -77,8 +121,12 @@ const Clients: React.FC = () => {
         >
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-                        {client.name.substring(0, 2).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm overflow-hidden">
+                        {client.image ? (
+                            <img src={client.image} alt={client.name} className="w-full h-full object-cover" />
+                        ) : (
+                            client.name.substring(0, 2).toUpperCase()
+                        )}
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 leading-tight">{client.name}</h3>
@@ -131,7 +179,10 @@ const Clients: React.FC = () => {
                     <p className="text-xs sm:text-base text-slate-500 mt-0.5">Manage clients and track financial performance</p>
                 </div>
                 <div className="hidden sm:flex items-center gap-3">
-                    <button className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-sm active:scale-95">
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-sm active:scale-95"
+                    >
                         <Plus size={20} />
                         <span>Add Client</span>
                     </button>
@@ -168,7 +219,10 @@ const Clients: React.FC = () => {
             </div>
 
             {/* Mobile Floating Action Button */}
-            <button className="fixed bottom-20 right-4 w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center sm:hidden z-50 active:scale-95 hover:bg-emerald-700 transition-colors">
+            <button 
+                onClick={() => setIsModalOpen(true)}
+                className="fixed bottom-20 right-4 w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center sm:hidden z-50 active:scale-95 hover:bg-emerald-700 transition-colors"
+            >
                 <Plus size={24} />
             </button>
 
@@ -212,9 +266,18 @@ const Clients: React.FC = () => {
                             {filteredClients.map((client) => (
                                 <tr key={client.id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div>
-                                            <p className="font-medium text-slate-900">{client.name}</p>
-                                            <p className="text-sm text-slate-500">{client.email}</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs overflow-hidden">
+                                                {client.image ? (
+                                                    <img src={client.image} alt={client.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    client.name.substring(0, 2).toUpperCase()
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-slate-900">{client.name}</p>
+                                                <p className="text-sm text-slate-500">{client.email}</p>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-slate-600">{client.phone}</td>
@@ -269,6 +332,98 @@ const Clients: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Add Client Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title="Add New Client"
+            >
+                <form onSubmit={handleAddClient} className="space-y-4">
+                    <Input
+                        label="Client Name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                        placeholder="Enter client name"
+                    />
+                    <Input
+                        label="Email Address"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                        placeholder="client@example.com"
+                    />
+                    <Input
+                        label="Phone Number"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                        placeholder="+91 98765 43210"
+                    />
+                    <Input
+                        label="Split Amount (%)"
+                        type="number"
+                        value={formData.splitAmount}
+                        onChange={(e) => setFormData({ ...formData, splitAmount: e.target.value })}
+                        placeholder="0"
+                        min="0"
+                        max="100"
+                    />
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Client Image</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-xl hover:border-emerald-500 transition-colors cursor-pointer relative bg-slate-50">
+                            <input
+                                type="file"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={handleImageChange}
+                                accept="image/*"
+                            />
+                            <div className="space-y-1 text-center">
+                                {formData.image ? (
+                                    <div className="flex flex-col items-center">
+                                        <img 
+                                            src={URL.createObjectURL(formData.image)} 
+                                            alt="Preview" 
+                                            className="h-20 w-20 object-cover rounded-full mb-2"
+                                        />
+                                        <p className="text-sm text-emerald-600 font-medium">Image selected</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="mx-auto h-12 w-12 text-slate-400">
+                                            <Upload size={48} />
+                                        </div>
+                                        <div className="flex text-sm text-slate-600">
+                                            <span className="relative cursor-pointer bg-white rounded-md font-medium text-emerald-600 hover:text-emerald-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-emerald-500">
+                                                Upload a file
+                                            </span>
+                                            <p className="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p className="text-xs text-slate-500">PNG, JPG, GIF up to 10MB</p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setIsModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit">
+                            Add Client
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };

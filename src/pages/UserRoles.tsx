@@ -5,7 +5,7 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { Input } from '../components/common/Input';
-import type { Role, NavigationPermission, Permission } from '../types';
+import type { Role, Permission } from '../types';
 
 const AVAILABLE_ROUTES = [
     { path: '/', label: 'Dashboard' },
