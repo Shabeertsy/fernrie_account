@@ -189,13 +189,17 @@ const ClientDetails: React.FC = () => {
                             <h2 className="text-lg sm:text-xl font-bold text-slate-900">Transactions</h2>
                             <p className="text-slate-500 text-xs sm:text-sm mt-0.5 sm:mt-1">Recent history</p>
                         </div>
-                        <button className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm active:scale-95">
+                        <button className="hidden sm:flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm active:scale-95">
                             <Plus size={18} />
-                            <span className="hidden sm:inline">Add Transaction</span>
-                            <span className="sm:hidden text-sm font-medium">Add</span>
+                            <span>Add Transaction</span>
                         </button>
                     </div>
                 </div>
+
+                {/* Mobile Floating Action Button */}
+                <button className="fixed bottom-20 right-4 w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center sm:hidden z-50 active:scale-95 hover:bg-emerald-700 transition-colors">
+                    <Plus size={24} />
+                </button>
 
                 <div className="p-4 sm:p-6">
                     <div className="space-y-3">
