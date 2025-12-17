@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     Users, DollarSign, TrendingUp, Receipt, Plus, Download, FileText, CheckSquare, ArrowRight,
     ArrowUp, ArrowDown
@@ -31,20 +32,16 @@ const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
 );
 
 const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
+    
     // Data for Charts
     const cashFlowData = [
-        { name: 'Income', value: 65 },
-        { name: 'Expense', value: 35 },
+        { name: 'Income', value: 0 },
+        { name: 'Expense', value: 0 },
     ];
     const CASHFLOW_COLORS = ['#10b981', '#ef4444']; // Emerald for Income, Red for Expense
 
-    const transactions = [
-        { name: 'ABC Corp', desc: 'INV-001', amount: '+₹1.5L', time: '2h', expense: false, initial: 'AB' },
-        { name: 'XYZ Ltd', desc: 'INV-002', amount: '+₹2.0L', time: '5h', expense: false, initial: 'XY' },
-        { name: 'Tech Sol', desc: 'INV-003', amount: '+₹1.8L', time: '1d', expense: false, initial: 'TS' },
-        { name: 'Digital', desc: 'Software', amount: '-₹75K', time: '1d', expense: true, initial: 'DS' },
-        { name: 'Mktg Inc', desc: 'SEO Svc', amount: '+₹95K', time: '2d', expense: false, initial: 'MI' },
-    ];
+    const transactions: any[] = [];
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 sm:pb-4">
@@ -72,29 +69,41 @@ const Dashboard: React.FC = () => {
                             <span className="text-sm font-medium">Total Revenue</span>
                             <TrendingUp size={14} />
                         </div>
-                        <h2 className="text-4xl font-bold mb-8">₹8.5L</h2>
+                        <h2 className="text-4xl font-bold mb-8">₹0</h2>
 
                         <div className="grid grid-cols-4 gap-2">
                             <div className="flex flex-col items-center gap-2">
-                                <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white">
+                                <button 
+                                    onClick={() => navigate('/billing')}
+                                    className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
+                                >
                                     <Receipt size={20} />
                                 </button>
                                 <span className="text-[10px] text-emerald-50 font-medium">Invoice</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white">
+                                <button 
+                                    onClick={() => navigate('/clients')}
+                                    className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
+                                >
                                     <Users size={20} />
                                 </button>
                                 <span className="text-[10px] text-emerald-50 font-medium">Client</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white">
+                                <button 
+                                    onClick={() => navigate('/partners')}
+                                    className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
+                                >
                                     <FileText size={20} />
                                 </button>
                                 <span className="text-[10px] text-emerald-50 font-medium">Partner</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white">
+                                <button 
+                                    onClick={() => navigate('/todo')}
+                                    className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
+                                >
                                     <CheckSquare size={20} />
                                 </button>
                                 <span className="text-[10px] text-emerald-50 font-medium">Task</span>
@@ -108,18 +117,18 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-3 gap-3 sm:hidden">
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Clients</span>
-                    <span className="text-lg font-bold text-slate-900">42</span>
-                    <span className="text-[10px] text-emerald-600">+5 new</span>
+                    <span className="text-lg font-bold text-slate-900">0</span>
+                    <span className="text-[10px] text-slate-400">+0 new</span>
                 </Card>
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Pending</span>
-                    <span className="text-lg font-bold text-slate-900">12</span>
-                    <span className="text-[10px] text-amber-600">-3 tasks</span>
+                    <span className="text-lg font-bold text-slate-900">0</span>
+                    <span className="text-[10px] text-slate-400">-0 tasks</span>
                 </Card>
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Partners</span>
-                    <span className="text-lg font-bold text-slate-900">8</span>
-                    <span className="text-[10px] text-emerald-600">+2 new</span>
+                    <span className="text-lg font-bold text-slate-900">0</span>
+                    <span className="text-[10px] text-slate-400">+0 new</span>
                 </Card>
             </div>
 
@@ -129,10 +138,10 @@ const Dashboard: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-slate-500 text-sm mb-1">Income vs Expense</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-4">₹12.5L</h3>
-                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5 w-fit">
-                                <span className="text-emerald-600">😎</span>
-                                <span className="text-[10px] text-emerald-700 font-medium">Net Profit: ₹5.0L</span>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4">₹0</h3>
+                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-full px-3 py-1.5 w-fit">
+                                <span className="text-slate-600">😊</span>
+                                <span className="text-[10px] text-slate-700 font-medium">Net Profit: ₹0</span>
                             </div>
                         </div>
                         <div className="w-24 h-24 relative">
@@ -175,29 +184,29 @@ const Dashboard: React.FC = () => {
             <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <StatCard
                     title="Clients"
-                    value="42"
-                    change="+5"
+                    value="0"
+                    change="+0"
                     icon={Users}
                     color="bg-blue-500"
                 />
                 <StatCard
                     title="Revenue"
-                    value="₹8.5L"
-                    change="+12%"
+                    value="₹0"
+                    change="+0%"
                     icon={DollarSign}
                     color="bg-emerald-500"
                 />
                 <StatCard
                     title="Pending"
-                    value="12"
-                    change="-3"
+                    value="0"
+                    change="-0"
                     icon={Receipt}
                     color="bg-amber-500"
                 />
                 <StatCard
                     title="Partners"
-                    value="8"
-                    change="+2"
+                    value="0"
+                    change="+0"
                     icon={Users}
                     color="bg-violet-500"
                 />
@@ -221,23 +230,29 @@ const Dashboard: React.FC = () => {
                         <Button variant="ghost" size="sm" className="text-xs hidden sm:flex">View All</Button>
                     </div>
                     <div className="divide-y divide-slate-100 space-y-3 sm:space-y-0">
-                        {transactions.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl sm:rounded-none border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-xl ${item.expense ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center text-xs font-bold`}>
-                                        {item.initial}
+                        {transactions.length > 0 ? (
+                            transactions.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl sm:rounded-none border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-xl ${item.expense ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center text-xs font-bold`}>
+                                            {item.initial}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-slate-900 text-sm">{item.name}</p>
+                                            <p className="text-xs text-slate-500">{item.desc}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-slate-900 text-sm">{item.name}</p>
-                                        <p className="text-xs text-slate-500">{item.desc}</p>
+                                    <div className="text-right">
+                                        <p className={`font-bold text-sm ${item.expense ? 'text-red-600' : 'text-emerald-600'}`}>{item.amount}</p>
+                                        <p className="text-xs text-slate-400">{item.time}</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className={`font-bold text-sm ${item.expense ? 'text-red-600' : 'text-emerald-600'}`}>{item.amount}</p>
-                                    <p className="text-xs text-slate-400">{item.time}</p>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-12 text-slate-500">
+                                <p>No transactions yet</p>
                             </div>
-                        ))}
+                        )}
                     </div>
                     <div className="p-3 text-center lg:hidden mt-2">
                         <button className="text-emerald-600 text-xs font-medium flex items-center justify-center gap-1 w-full">

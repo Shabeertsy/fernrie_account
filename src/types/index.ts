@@ -103,5 +103,26 @@ export interface CompanyTransaction {
     split_amount: boolean;
     image: string | null;
     notes: string | null;
+    is_closed: boolean;
+}
+
+export interface PersonalTransaction {
+    id: number;
+    user: string;
+    amount: string;
+    created_at: string;
+    notes: string;
+    payment_date: string;
+    payment_method: string;
+    transaction: CompanyTransaction;
+    updated_at: string;
+    details?: any;
+    is_completed: boolean;
+    pending_balance: string | null;
+}
+
+export interface PersonalTransactionResponse {
+    data: PersonalTransaction[];
+    details: CompanyTransaction;
 }
 

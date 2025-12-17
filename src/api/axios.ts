@@ -40,7 +40,7 @@ export const setupInterceptors = (store: any) => {
             }
 
             // Call refresh token endpoint
-            const response = await axios.post(`${BASE_URL}/api/refresh-token/`, {
+            const response = await axios.post(`${BASE_URL}api/refresh-token/`, {
               refresh: refreshToken,
             });
 

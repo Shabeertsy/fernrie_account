@@ -13,7 +13,7 @@ export const companyAPI = {
     },
 
     getTransaction: async (id: number) => {
-        const response = await api.get<CompanyTransaction>(`accounts/personal-transactions/${id}/`);
+        const response = await api.get<CompanyTransaction>(`accounts/company-transactions/${id}/`);
         return response.data;
     },
 

@@ -1,4 +1,5 @@
 import api from './axios';
+import type { PersonalTransaction } from '../types';
 
 export interface Partner {
     id: number;
@@ -8,7 +9,14 @@ export interface Partner {
 
 export const partnersAPI = {
     getPartners: async () => {
-        const response = await api.get<Partner[]>('partners/');
+        const response = await api.get<Partner[]>('accounts/partners/');
+        return response.data;
+    },
+    
+    getPartnerTransactions: async (partnerId: number) => {
+        const response = await api.get<PersonalTransaction[]>('accounts/partner-transactions/', {
+            params: { partner: partnerId }
+        });
         return response.data;
     }
 };

@@ -12,6 +12,8 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import CompanyAccounts from './pages/CompanyAccounts';
 import TransactionDetail from './pages/TransactionDetail';
+import PartnerDetail from './pages/PartnerDetail';
+import BillingDetail from './pages/BillingDetail';
 
 function App() {
   return (
@@ -32,7 +34,9 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="billing" element={<Billing />} />
+            <Route path="billing/:id" element={<BillingDetail />} />
             <Route path="partners" element={<Partners />} />
+            <Route path="partners/:id" element={<PartnerDetail />} />
             <Route path="clients" element={<Clients />} />
             <Route path="clients/:id" element={<ClientDetails />} />
             <Route path="todo" element={<Todo />} />

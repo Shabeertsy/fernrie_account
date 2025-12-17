@@ -261,44 +261,48 @@ const CompanyAccounts: React.FC = () => {
                                 return (
                                     <Card 
                                         key={t.id} 
-                                        className="p-4 flex items-center justify-between hover:shadow-md transition-shadow group cursor-pointer"
+                                        className="p-4 hover:shadow-md transition-shadow group cursor-pointer"
                                         onClick={() => navigate(`/company-accounts/${t.id}`)}
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                        <div className="flex items-center gap-3">
+                                            {/* Icon */}
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                                                 t.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
                                             }`}>
                                                 {t.transaction_type === 'income' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />}
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900">{getPersonDisplay(t)}</p>
+                                            
+                                            {/* Content - can shrink */}
+                                            <div className="flex-1 min-w-0 overflow-hidden">
+                                                <p className="font-bold text-slate-900 truncate">{getPersonDisplay(t)}</p>
                                                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                                                     <span className="flex items-center gap-1"><Calendar size={12} /> {dateStr}</span>
                                                     <span className="flex items-center gap-1"><Clock size={12} /> {timeStr}</span>
                                                 </div>
-                                                {t.notes && <p className="text-xs text-slate-400 mt-1">{t.notes}</p>}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-4">
-                                            <div className={`text-right font-bold ${t.transaction_type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {t.transaction_type === 'income' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString()}
+                                                {t.notes && <p className="text-xs text-slate-400 mt-1 truncate">{t.notes}</p>}
                                             </div>
                                             
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-1">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(t); }}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                            {/* Amount and Actions - never shrink */}
+                                            <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
+                                                <div className={`font-bold text-sm whitespace-nowrap ${t.transaction_type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                    {t.transaction_type === 'income' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString()}
+                                                </div>
+                                                
+                                                {/* Actions */}
+                                                <div className="flex items-center gap-1">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleEdit(t); }}
+                                                        className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
+                                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </Card>

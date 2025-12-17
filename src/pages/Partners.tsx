@@ -1,99 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     Search, 
-    Plus, 
-    Mail, 
-    Phone, 
-    Edit2, 
-    MessageCircle, 
+    Plus,
     Briefcase, 
     PieChart, 
     Clock,
     Users,
-    DollarSign
+    Loader2
 } from 'lucide-react';
-
-interface Partner {
-    id: string;
-    name: string;
-    role: string;
-    type: 'Business' | 'Technical' | 'Financial';
-    status: 'active' | 'inactive';
-    email: string;
-    phone: string;
-    equity: string;
-    joinedDate: string;
-    avatar: string;
-    totalRevenue: number;
-}
+import { partnersAPI, type Partner } from '../api/partners';
 
 const Partners: React.FC = () => {
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
+    const [partners, setPartners] = useState<Partner[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock data
-    const [partners] = useState<Partner[]>([
-        {
-            id: '1',
-            name: 'Sarah Wilson',
-            role: 'Lead Investor',
-            type: 'Financial',
-            status: 'active',
-            email: 'sarah.w@example.com',
-            phone: '+91 98765 43210',
-            equity: '35%',
-            joinedDate: 'Jan 2023',
-            avatar: 'S',
-            totalRevenue: 150000
-        },
-        {
-            id: '2',
-            name: 'David Chen',
-            role: 'Tech Advisor',
-            type: 'Technical',
-            status: 'active',
-            email: 'david.c@example.com',
-            phone: '+91 98765 43211',
-            equity: '15%',
-            joinedDate: 'Mar 2023',
-            avatar: 'D',
-            totalRevenue: 85000
-        },
-        {
-            id: '3',
-            name: 'Michael Ross',
-            role: 'Operations Head',
-            type: 'Business',
-            status: 'inactive',
-            email: 'michael.r@example.com',
-            phone: '+91 98765 43212',
-            equity: '10%',
-            joinedDate: 'Jun 2023',
-            avatar: 'M',
-            totalRevenue: 45000
-        },
-        {
-            id: '4',
-            name: 'Emma Thompson',
-            role: 'Marketing Dir',
-            type: 'Business',
-            status: 'active',
-            email: 'emma.t@example.com',
-            phone: '+91 98765 43213',
-            equity: '20%',
-            joinedDate: 'Aug 2023',
-            avatar: 'E',
-            totalRevenue: 92000
-        }
-    ]);
+    useEffect(() => {
+        const fetchPartners = async () => {
+            setLoading(true);
+            try {
+                const data = await partnersAPI.getPartners();
+                setPartners(data);
+            } catch (error) {
+                console.error('Failed to fetch partners:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-
+        fetchPartners();
+    }, []);
 
     const filteredPartners = partners.filter(partner => {
-        const matchesSearch = partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            partner.role.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filterType === 'all' || partner.type.toLowerCase() === filterType.toLowerCase();
-        return matchesSearch && matchesFilter;
+        const matchesSearch = partner.name.toLowerCase().includes(searchTerm.toLowerCase());
+        // Note: API Partner type doesn't have 'type' field, so we'll skip type filtering for now
+        return matchesSearch;
     });
 
     return (
@@ -190,89 +134,66 @@ const Partners: React.FC = () => {
                 </div>
             </div>
 
+            {/* Loading State */}
+            {loading && (
+                <div className="flex justify-center items-center py-12">
+                    <Loader2 className="animate-spin text-emerald-600" size={32} />
+                </div>
+            )}
+
             {/* Partners Grid (Desktop) */}
-            <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-                {filteredPartners.map((partner) => (
-                    <div key={partner.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-base sm:text-lg">
-                                        {partner.name.charAt(0)}
-                                    </span>
+            {!loading && (
+                <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                    {filteredPartners.map((partner) => (
+                        <div 
+                            key={partner.id} 
+                            className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => navigate(`/partners/${partner.id}`)}
+                        >
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-bold text-base sm:text-lg">
+                                            {partner.name.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 leading-tight">{partner.name}</h3>
+                                        <p className="text-xs sm:text-sm text-slate-500 font-medium">Partner ID: {partner.id}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900 leading-tight">{partner.name}</h3>
-                                    <p className="text-xs sm:text-sm text-slate-500 font-medium">{partner.role}</p>
-                                </div>
-                            </div>
-                            <span className={`text-[10px] sm:text-xs px-2 py-1 rounded-full font-semibold border ${
-                                partner.status === 'active'
-                                    ? 'bg-green-50 text-green-700 border-green-200'
-                                    : 'bg-gray-50 text-gray-700 border-gray-200'
-                            }`}>
-                                {partner.status}
-                            </span>
-                        </div>
-
-                        <div className="space-y-2 mb-4 bg-slate-50 p-3 rounded-lg">
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
-                                <Mail size={14} className="text-slate-400" />
-                                <span className="truncate">{partner.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
-                                <Phone size={14} className="text-slate-400" />
-                                <span>{partner.phone}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
-                                <DollarSign size={14} className="text-slate-400" />
-                                <span className="flex-1">Equity: {partner.equity}</span>
-                                <span className="font-semibold text-emerald-600">₹{partner.totalRevenue.toLocaleString()}</span>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors active:scale-95">
-                                <MessageCircle size={16} />
-                                <span className="text-xs font-semibold">Message</span>
-                            </button>
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active:scale-95">
-                                <Edit2 size={16} />
-                                <span className="text-xs font-semibold">Edit</span>
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Mobile List View */}
-            <div className="space-y-3 sm:hidden">
-                {filteredPartners.map((partner) => (
-                    <div key={partner.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                partner.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                                <span className="font-bold text-lg">{partner.avatar}</span>
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900">{partner.name}</h3>
-                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                    <span>{partner.role}</span>
-                                    <span>•</span>
-                                    <span>{partner.joinedDate}</span>
+            {!loading && (
+                <div className="space-y-3 sm:hidden">
+                    {filteredPartners.map((partner) => (
+                        <div 
+                            key={partner.id} 
+                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => navigate(`/partners/${partner.id}`)}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600">
+                                    <span className="font-bold text-lg">{partner.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900">{partner.name}</h3>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                        <span>ID: {partner.id}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="font-bold text-emerald-600">+₹{partner.totalRevenue.toLocaleString()}</p>
-                            <p className="text-xs text-slate-400">{partner.equity} Equity</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
-            {filteredPartners.length === 0 && (
+            {!loading && filteredPartners.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
                     <Plus className="mx-auto text-slate-300" size={48} />
                     <p className="text-slate-500 mt-2">No partners found</p>
