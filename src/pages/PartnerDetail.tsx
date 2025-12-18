@@ -29,15 +29,9 @@ const PartnerDetail: React.FC = () => {
                 const currentPartner = partnersData.find(p => p.id === parseInt(id));
                 setPartner(currentPartner || null);
 
-                // Fetch all company transactions
-                const txData = await companyAPI.getTransactions();
-                const allTransactions = Array.isArray(txData) ? txData : txData.results || [];
-
-                // Filter transactions for this partner where split_amount is true
-                const partnerTransactions = allTransactions.filter((t: CompanyTransaction) => {
-                    const personId = typeof t.person === 'object' && t.person ? t.person.id : t.person;
-                    return personId === parseInt(id) && t.split_amount === true;
-                });
+                // Fetch split transactions for this partner
+                const txData = await companyAPI.getSplitTransactions(undefined, undefined, 1, parseInt(id));
+                const partnerTransactions = Array.isArray(txData) ? txData : txData.results || [];
                 setTransactions(partnerTransactions);
             } catch (error) {
                 console.error('Failed to fetch partner details:', error);

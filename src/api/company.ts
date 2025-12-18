@@ -37,5 +37,43 @@ export const companyAPI = {
             },
         });
         return response.data;
+    },
+
+    // Split Transaction APIs
+    getSplitTransactions: async (month?: number, year?: number, page: number = 1, person?: number) => {
+        const params: any = { page };
+        if (month) params.month = month;
+        if (year) params.year = year;
+        if (person) params.person = person;
+        
+        const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/split-transactions/', { params });
+        return response.data;
+    },
+
+    getSplitTransaction: async (id: number) => {
+        const response = await api.get<CompanyTransaction>(`accounts/split-transactions/${id}/`);
+        return response.data;
+    },
+
+    createSplitTransaction: async (data: FormData) => {
+        const response = await api.post<CompanyTransaction>('accounts/split-transactions/create/', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    deleteSplitTransaction: async (id: number) => {
+        await api.delete(`accounts/split-transactions/${id}/`);
+    },
+    
+    updateSplitTransaction: async (id: number, data: FormData) => {
+         const response = await api.patch<CompanyTransaction>(`accounts/split-transactions/${id}/`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     }
 };
