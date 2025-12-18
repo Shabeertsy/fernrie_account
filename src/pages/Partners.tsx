@@ -15,7 +15,6 @@ import type { Partner } from '../types';
 const Partners: React.FC = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all');
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<{ total_transaction_count: number; total_transaction_amount: number } | null>(null);

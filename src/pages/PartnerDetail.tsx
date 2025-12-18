@@ -30,7 +30,7 @@ const PartnerDetail: React.FC = () => {
                 setPartner(currentPartner || null);
 
                 // Fetch split transactions for this partner using the split-transactions API
-                const splitTransactionsResponse = await companyAPI.getSplitTransactions(parseInt(id));
+                const splitTransactionsResponse = await companyAPI.getSplitTransactions(undefined, undefined, 1, parseInt(id));
 
                 setTransactions(splitTransactionsResponse.results);
             } catch (error) {

@@ -34,7 +34,7 @@ const TransactionDetail: React.FC = () => {
 
                 // Fetch partners to resolve names
                 const partnersData = await partnersAPI.getPartners();
-                setPartners(partnersData);
+                setPartners(partnersData.partners);
 
                 // Fetch related personal transactions
                 try {

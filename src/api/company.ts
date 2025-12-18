@@ -31,15 +31,6 @@ export const companyAPI = {
         return response.data;
     },
 
-    getSplitTransactions: async (personId?: number, isClosed?: boolean, page: number = 1) => {
-        const params: any = { page };
-        if (personId) params.person = personId;
-        if (isClosed !== undefined) params.is_closed = isClosed;
-
-        const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/split-transactions/', { params });
-        return response.data;
-    },
-
     approveTransactionRequest: async (id: number, status: 'approve' | 'reject') => {
         const response = await api.patch<CompanyTransaction>(`accounts/transaction-requests/${id}/approve/`, { admin_status: status });
         return response.data;
@@ -78,7 +69,7 @@ export const companyAPI = {
         if (month) params.month = month;
         if (year) params.year = year;
         if (person) params.person = person;
-        
+
         const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/split-transactions/', { params });
         return response.data;
     },
@@ -100,9 +91,9 @@ export const companyAPI = {
     deleteSplitTransaction: async (id: number) => {
         await api.delete(`accounts/split-transactions/${id}/`);
     },
-    
+
     updateSplitTransaction: async (id: number, data: FormData) => {
-         const response = await api.patch<CompanyTransaction>(`accounts/split-transactions/${id}/`, data, {
+        const response = await api.patch<CompanyTransaction>(`accounts/split-transactions/${id}/`, data, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
