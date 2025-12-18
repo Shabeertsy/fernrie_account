@@ -9,7 +9,8 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   rememberMe: boolean;
-  
+  isAdmin: boolean;
+
   login: (identifier: string, password: string, rememberMe: boolean) => Promise<void>;
   logout: () => void;
   setAccessToken: (token: string) => void;
@@ -23,18 +24,18 @@ const storage: StateStorage = {
   },
   setItem: (name: string, value: string): void => {
     try {
-        const parsed = JSON.parse(value);
-        const rememberMe = parsed.state?.rememberMe;
-        
-        if (rememberMe) {
-            localStorage.setItem(name, value);
-            sessionStorage.removeItem(name);
-        } else {
-            sessionStorage.setItem(name, value);
-            localStorage.removeItem(name);
-        }
-    } catch (e) {
+      const parsed = JSON.parse(value);
+      const rememberMe = parsed.state?.rememberMe;
+
+      if (rememberMe) {
         localStorage.setItem(name, value);
+        sessionStorage.removeItem(name);
+      } else {
+        sessionStorage.setItem(name, value);
+        localStorage.removeItem(name);
+      }
+    } catch (e) {
+      localStorage.setItem(name, value);
     }
   },
   removeItem: (name: string): void => {
@@ -51,16 +52,17 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       rememberMe: false,
+      isAdmin: false,
 
       login: async (identifier, password, rememberMe) => {
         try {
-         
-          const response = await api.post('/api/login/', {
+
+          const response = await api.post('/accounts/login/', {
             email: identifier,
             password,
           });
 
-          const { access, refresh, user } = response.data;
+          const { access, refresh, user, is_admin } = response.data;
 
           set({
             user,
@@ -68,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: refresh,
             isAuthenticated: true,
             rememberMe,
+            isAdmin: is_admin,
           });
         } catch (error) {
           throw error;
@@ -81,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
           rememberMe: false,
+          isAdmin: false,
         });
         localStorage.removeItem('auth-storage');
         sessionStorage.removeItem('auth-storage');
