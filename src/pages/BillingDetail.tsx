@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
     ArrowLeft,
     User,
     Calendar,
@@ -8,7 +8,8 @@ import {
     Loader2,
     Edit2,
     Trash2,
-    Plus
+    Plus,
+    AlertCircle
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { companyAPI } from '../api/company';
@@ -24,6 +25,13 @@ const BillingDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<PersonalTransaction | null>(null);
+    const [formData, setFormData] = useState({
+        user: '',
+        amount: '',
+        payment_method: 'cash',
+        notes: ''
+    });
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -39,16 +47,30 @@ const BillingDetail: React.FC = () => {
 
             // Fetch personal transactions
             try {
-                const response = await personalAPI.getPersonalTransactions(parseInt(id));
-                if (response && Array.isArray(response.data)) {
-                    setPersonalTransactions(response.data);
+                let partnerId;
+                if (txData.person) {
+                    partnerId = typeof txData.person === 'object' ? txData.person.id : txData.person;
                 }
-            } catch (error) {
+
+                if (partnerId) {
+                    const response = await personalAPI.getPartnerTransactionDetails(partnerId, parseInt(id));
+                    // Check if response itself is the array, or if it has a data property
+                    const transactionsList = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                    setPersonalTransactions(transactionsList);
+                } else {
+                    // Fallback to empty if no partner associated
+                    setPersonalTransactions([]);
+                }
+            } catch (error: any) {
                 console.error('Failed to fetch personal transactions:', error);
+                const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Failed to fetch personal transactions. Please try again.';
+                setError(errorMessage);
                 setPersonalTransactions([]);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch transaction:', error);
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Failed to fetch transaction details. Please try again.';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -56,24 +78,36 @@ const BillingDetail: React.FC = () => {
 
     const handleEdit = (pt: PersonalTransaction) => {
         setEditingTransaction(pt);
+        setFormData({
+            user: pt.user,
+            amount: pt.amount,
+            payment_method: pt.payment_method,
+            notes: pt.notes || ''
+        });
         setIsModalOpen(true);
     };
 
     const handleDelete = async (ptId: number) => {
         if (!window.confirm('Are you sure you want to delete this transaction?')) return;
-        
+
         try {
-            // TODO: Implement delete API call
-            console.log('Deleting transaction:', ptId);
-            // await personalAPI.deletePersonalTransaction(ptId);
+            await personalAPI.deletePersonalTransaction(ptId);
             await fetchData(); // Refresh data
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete:', error);
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Failed to delete transaction. Please try again.';
+            setError(errorMessage);
         }
     };
 
     const handleAddNew = () => {
         setEditingTransaction(null);
+        setFormData({
+            user: '',
+            amount: '',
+            payment_method: 'cash',
+            notes: ''
+        });
         setIsModalOpen(true);
     };
 
@@ -83,9 +117,38 @@ const BillingDetail: React.FC = () => {
     };
 
     const handleSave = async () => {
-        // TODO: Implement save logic
-        await fetchData();
-        handleCloseModal();
+        if (!transaction) return;
+
+        try {
+            // Determine user ID from transaction person if available
+            let userId = formData.user;
+            if (!editingTransaction && transaction.person) {
+                // specific logic: if creating, use the partner ID as the user
+                userId = typeof transaction.person === 'object' ? transaction.person.id.toString() : transaction.person.toString();
+            }
+
+            const dataToSave = {
+                ...formData,
+                user: userId, // Override/Ensure user ID is passed
+                transaction: transaction.id,
+                // Add default date if new, or keep existing? Backend usually handles dates if not provided
+                payment_date: editingTransaction ? editingTransaction.payment_date : new Date().toISOString()
+            };
+
+            if (editingTransaction) {
+                await personalAPI.updatePersonalTransaction(editingTransaction.id, dataToSave);
+            } else {
+                await personalAPI.createPersonalTransaction(dataToSave);
+            }
+            await fetchData();
+            await fetchData();
+            handleCloseModal();
+            setError(null);
+        } catch (error: any) {
+            console.error('Failed to save transaction:', error);
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Failed to save transaction. Please try again.';
+            setError(errorMessage);
+        }
     };
 
     if (loading) {
@@ -100,7 +163,7 @@ const BillingDetail: React.FC = () => {
         return (
             <div className="text-center py-10">
                 <p className="text-slate-500">Transaction not found.</p>
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="mt-4 text-emerald-600 font-medium hover:underline"
                 >
@@ -114,7 +177,7 @@ const BillingDetail: React.FC = () => {
         <div className="space-y-6 pb-24 sm:pb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                 >
@@ -125,6 +188,15 @@ const BillingDetail: React.FC = () => {
                 </div>
             </div>
 
+
+            {/* Error Message */}
+            {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 border border-red-100">
+                    <AlertCircle size={20} className="flex-shrink-0" />
+                    <p className="text-sm font-medium">{error}</p>
+                </div>
+            )}
+
             {/* Main Transaction Info */}
             <Card className="p-6 bg-white border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -134,11 +206,10 @@ const BillingDetail: React.FC = () => {
                             ₹{parseFloat(transaction.amount).toLocaleString()}
                         </h2>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        transaction.is_closed 
-                            ? 'bg-emerald-100 text-emerald-700' 
-                            : 'bg-amber-100 text-amber-700'
-                    }`}>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${transaction.is_closed
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700'
+                        }`}>
                         {transaction.is_closed ? 'Completed' : 'New'}
                     </div>
                 </div>
@@ -163,10 +234,10 @@ const BillingDetail: React.FC = () => {
                             const tDateObj = new Date(t.payment_date);
                             const tDateStr = tDateObj.toLocaleDateString();
                             const tTimeStr = tDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            
+
                             return (
-                                <Card 
-                                    key={t.id} 
+                                <Card
+                                    key={t.id}
                                     className="p-4 hover:shadow-md transition-shadow"
                                 >
                                     <div className="flex items-start gap-3">
@@ -176,11 +247,10 @@ const BillingDetail: React.FC = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <p className="font-bold text-slate-900">{t.user}</p>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                    t.is_completed 
-                                                        ? 'bg-emerald-100 text-emerald-700' 
-                                                        : 'bg-amber-100 text-amber-700'
-                                                }`}>
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.is_completed
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : 'bg-amber-100 text-amber-700'
+                                                    }`}>
                                                     {t.is_completed ? 'Completed' : 'Pending'}
                                                 </span>
                                             </div>
@@ -205,13 +275,13 @@ const BillingDetail: React.FC = () => {
                                                 )}
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <button 
+                                                <button
                                                     onClick={() => handleEdit(t)}
                                                     className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleDelete(t.id)}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
@@ -239,26 +309,20 @@ const BillingDetail: React.FC = () => {
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">User</label>
-                        <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            defaultValue={editingTransaction?.user || ''}
-                        />
-                    </div>
-                    <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
                         <input
                             type="number"
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            defaultValue={editingTransaction?.amount || ''}
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
                         <select
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            defaultValue={editingTransaction?.payment_method || 'cash'}
+                            value={formData.payment_method}
+                            onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
                         >
                             <option value="cash">Cash</option>
                             <option value="online">Online</option>
@@ -270,7 +334,8 @@ const BillingDetail: React.FC = () => {
                         <textarea
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             rows={3}
-                            defaultValue={editingTransaction?.notes || ''}
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                         />
                     </div>
                     <div className="flex gap-3 pt-4">

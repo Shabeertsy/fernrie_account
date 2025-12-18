@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
     Plus,
     ArrowUpCircle,
     ArrowDownCircle,
@@ -16,8 +16,8 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { companyAPI } from '../api/company';
-import { partnersAPI, type Partner } from '../api/partners';
-import type { CompanyTransaction } from '../types';
+import { partnersAPI } from '../api/partners';
+import type { CompanyTransaction, Partner } from '../types';
 
 const CompanyAccounts: React.FC = () => {
     const navigate = useNavigate();
@@ -25,15 +25,15 @@ const CompanyAccounts: React.FC = () => {
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState(''); // Empty by default to show all
+    const [selectedMonth, setSelectedMonth] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<CompanyTransaction | null>(null);
-    
+
     // Form State
     const [formData, setFormData] = useState({
         amount: '',
         type: 'income' as 'income' | 'expense',
-        person: '', // This will now store the ID
+        person: '', // this is a string id
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toTimeString().slice(0, 5),
         description: '',
@@ -44,7 +44,8 @@ const CompanyAccounts: React.FC = () => {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            let month, year;
+            let month: number | undefined = undefined;
+            let year: number | undefined = undefined;
             if (selectedMonth) {
                 const [y, m] = selectedMonth.split('-');
                 year = parseInt(y);
@@ -71,6 +72,7 @@ const CompanyAccounts: React.FC = () => {
     useEffect(() => {
         fetchTransactions();
         fetchPartners();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMonth]);
 
     const handleSaveTransaction = async (e: React.FormEvent) => {
@@ -80,20 +82,18 @@ const CompanyAccounts: React.FC = () => {
             const formDataToSend = new FormData();
             formDataToSend.append('transaction_type', formData.type);
             formDataToSend.append('amount', formData.amount);
-            
-            // Combine date and time
+
             const dateTime = `${formData.date}T${formData.time}:00`;
             formDataToSend.append('date_time', dateTime);
-            
+
             formDataToSend.append('split_amount', formData.splitAmount ? 'true' : 'false');
             if (formData.image) {
                 formDataToSend.append('image', formData.image);
             }
-            
+
             if (formData.person) {
                 formDataToSend.append('person', formData.person);
             }
-
             formDataToSend.append('notes', formData.description);
 
             if (editingTransaction) {
@@ -101,7 +101,7 @@ const CompanyAccounts: React.FC = () => {
             } else {
                 await companyAPI.createTransaction(formDataToSend);
             }
-            
+
             closeModal();
             fetchTransactions();
         } catch (error) {
@@ -113,7 +113,7 @@ const CompanyAccounts: React.FC = () => {
 
     const handleDelete = async (id: number) => {
         if (!window.confirm('Are you sure you want to delete this transaction?')) return;
-        
+
         try {
             await companyAPI.deleteTransaction(id);
             fetchTransactions();
@@ -124,7 +124,7 @@ const CompanyAccounts: React.FC = () => {
 
     const handleEdit = (transaction: CompanyTransaction) => {
         setEditingTransaction(transaction);
-        
+
         const dateObj = new Date(transaction.date_time);
         const dateStr = dateObj.toISOString().slice(0, 10);
         const timeStr = dateObj.toTimeString().slice(0, 5);
@@ -132,12 +132,17 @@ const CompanyAccounts: React.FC = () => {
         setFormData({
             amount: transaction.amount,
             type: transaction.transaction_type,
-            person: transaction.person ? transaction.person.toString() : '',
+            person:
+                typeof transaction.person === 'object' && transaction.person !== null
+                    ? transaction.person.id?.toString?.() ?? ''
+                    : transaction.person
+                        ? transaction.person.toString()
+                        : '',
             date: dateStr,
             time: timeStr,
             description: transaction.notes || '',
-            splitAmount: transaction.split_amount,
-            image: null // We don't preload the image file object
+            splitAmount: !!transaction.split_amount,
+            image: null
         });
         setIsModalOpen(true);
     };
@@ -164,20 +169,23 @@ const CompanyAccounts: React.FC = () => {
     };
 
     const totalIncome = transactions
-        .filter(t => t.transaction_type === 'income')
+        .filter((t) => t.transaction_type === 'income')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
     const totalExpense = transactions
-        .filter(t => t.transaction_type === 'expense')
+        .filter((t) => t.transaction_type === 'expense')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
     const balance = totalIncome - totalExpense;
 
-    // Helper to get person name from ID or notes
+    // getPersonDisplay
     const getPersonDisplay = (t: CompanyTransaction) => {
-        if (t.person_name) return t.person_name;
+        if (t.person && typeof t.person === 'object' && t.person !== null) {
+            return (t.person.person_name || t.person.name) ?? 'Unknown';
+        }
         if (t.person) {
-            const partner = partners.find(p => p.id === t.person);
+            const idNum = typeof t.person === 'string' ? parseInt(t.person, 10) : t.person;
+            const partner = partners.find((p) => p.id === idNum);
             if (partner) return partner.name;
         }
         return t.notes || 'Unknown';
@@ -194,8 +202,8 @@ const CompanyAccounts: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input 
-                            type="month" 
+                        <input
+                            type="month"
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
                             className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -257,22 +265,25 @@ const CompanyAccounts: React.FC = () => {
                                 const dateObj = new Date(t.date_time);
                                 const dateStr = dateObj.toLocaleDateString();
                                 const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                
+
                                 return (
-                                    <Card 
-                                        key={t.id} 
+                                    <Card
+                                        key={t.id}
                                         className="p-4 hover:shadow-md transition-shadow group cursor-pointer"
                                         onClick={() => navigate(`/company-accounts/${t.id}`)}
                                     >
                                         <div className="flex items-center gap-3">
                                             {/* Icon */}
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                t.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                                            }`}>
-                                                {t.transaction_type === 'income' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />}
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${t.transaction_type === 'income'
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : 'bg-red-100 text-red-600'
+                                                }`}>
+                                                {t.transaction_type === 'income'
+                                                    ? <ArrowUpCircle size={24} />
+                                                    : <ArrowDownCircle size={24} />}
                                             </div>
-                                            
-                                            {/* Content - can shrink */}
+
+                                            {/* Content */}
                                             <div className="flex-1 min-w-0 overflow-hidden">
                                                 <p className="font-bold text-slate-900 truncate">{getPersonDisplay(t)}</p>
                                                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
@@ -281,23 +292,35 @@ const CompanyAccounts: React.FC = () => {
                                                 </div>
                                                 {t.notes && <p className="text-xs text-slate-400 mt-1 truncate">{t.notes}</p>}
                                             </div>
-                                            
-                                            {/* Amount and Actions - never shrink */}
+
+                                            {/* Amount and Actions */}
                                             <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
+                                                <div className={`px-2 py-0.5 rounded text-[10px] font-medium border hidden sm:block ${t.is_closed
+                                                        ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                                        : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                    }`}>
+                                                    {t.is_closed ? 'Closed' : 'Pending'}
+                                                </div>
                                                 <div className={`font-bold text-sm whitespace-nowrap ${t.transaction_type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
                                                     {t.transaction_type === 'income' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString()}
                                                 </div>
-                                                
-                                                {/* Actions */}
                                                 <div className="flex items-center gap-1">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleEdit(t); }}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEdit(t);
+                                                        }}
                                                         className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                                     >
                                                         <Edit2 size={16} />
                                                     </button>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(t.id);
+                                                        }}
                                                         className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     >
                                                         <Trash2 size={16} />
@@ -318,7 +341,8 @@ const CompanyAccounts: React.FC = () => {
             </div>
 
             {/* Mobile FAB */}
-            <button 
+            <button
+                type="button"
                 onClick={() => setIsModalOpen(true)}
                 className="fixed bottom-24 right-4 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-300 flex items-center justify-center sm:hidden z-40 active:scale-95 transition-transform"
             >
@@ -337,23 +361,21 @@ const CompanyAccounts: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1 bg-slate-100 rounded-xl">
                         <button
                             type="button"
-                            onClick={() => setFormData({...formData, type: 'income'})}
-                            className={`py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${
-                                formData.type === 'income' 
-                                    ? 'bg-white text-emerald-600 shadow-sm' 
-                                    : 'text-slate-500 hover:text-slate-700'
-                            }`}
+                            onClick={() => setFormData({ ...formData, type: 'income' })}
+                            className={`py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${formData.type === 'income'
+                                ? 'bg-white text-emerald-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
                         >
                             Income
                         </button>
                         <button
                             type="button"
-                            onClick={() => setFormData({...formData, type: 'expense'})}
-                            className={`py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${
-                                formData.type === 'expense' 
-                                    ? 'bg-white text-red-600 shadow-sm' 
-                                    : 'text-slate-500 hover:text-slate-700'
-                            }`}
+                            onClick={() => setFormData({ ...formData, type: 'expense' })}
+                            className={`py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${formData.type === 'expense'
+                                ? 'bg-white text-red-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
                         >
                             Expense
                         </button>
@@ -362,12 +384,12 @@ const CompanyAccounts: React.FC = () => {
                     <div>
                         <label className="block text-xs font-medium text-slate-700 mb-1">Amount</label>
                         <div className="relative">
-                            
+
                             <input
                                 type="number"
                                 required
                                 value={formData.amount}
-                                onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                                 className="w-full pl-10 pr-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold text-lg"
                                 placeholder="0.00"
                             />
@@ -380,11 +402,11 @@ const CompanyAccounts: React.FC = () => {
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <select
                                 value={formData.person}
-                                onChange={(e) => setFormData({...formData, person: e.target.value})}
+                                onChange={(e) => setFormData({ ...formData, person: e.target.value })}
                                 className="w-full pl-10 pr-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none"
                             >
                                 <option value="">Not Specified</option>
-                                {partners.map(partner => (
+                                {partners.map((partner) => (
                                     <option key={partner.id} value={partner.id}>
                                         {partner.name}
                                     </option>
@@ -404,7 +426,7 @@ const CompanyAccounts: React.FC = () => {
                                     type="date"
                                     required
                                     value={formData.date}
-                                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                     className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
                                 />
                             </div>
@@ -416,7 +438,7 @@ const CompanyAccounts: React.FC = () => {
                                     type="time"
                                     required
                                     value={formData.time}
-                                    onChange={(e) => setFormData({...formData, time: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                                     className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
                                 />
                             </div>
@@ -428,7 +450,7 @@ const CompanyAccounts: React.FC = () => {
                             type="checkbox"
                             id="splitAmount"
                             checked={formData.splitAmount}
-                            onChange={(e) => setFormData({...formData, splitAmount: e.target.checked})}
+                            onChange={(e) => setFormData({ ...formData, splitAmount: e.target.checked })}
                             className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300"
                         />
                         <label htmlFor="splitAmount" className="text-sm font-medium text-slate-700">
@@ -448,9 +470,9 @@ const CompanyAccounts: React.FC = () => {
                             <div className="space-y-1 text-center">
                                 {formData.image ? (
                                     <div className="flex flex-col items-center">
-                                        <img 
-                                            src={URL.createObjectURL(formData.image)} 
-                                            alt="Preview" 
+                                        <img
+                                            src={URL.createObjectURL(formData.image)}
+                                            alt="Preview"
                                             className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-lg mb-2"
                                         />
                                         <p className="text-xs text-emerald-600 font-medium">Image selected</p>
@@ -475,7 +497,7 @@ const CompanyAccounts: React.FC = () => {
                         <label className="block text-xs font-medium text-slate-700 mb-1">Description (Optional)</label>
                         <textarea
                             value={formData.description}
-                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm resize-none h-16 sm:h-20"
                             placeholder="Add notes..."
                         />

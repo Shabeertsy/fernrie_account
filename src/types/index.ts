@@ -1,3 +1,10 @@
+export interface Partner {
+    id: number;
+    name: string;
+    email:string;
+    person_name?: string; // Sometimes returned as person_name
+}
+
 export interface Member {
     id: number;
     name: string;
@@ -97,7 +104,7 @@ export interface CompanyTransaction {
     id: number;
     transaction_type: 'income' | 'expense';
     amount: string; // DecimalField comes as string usually, or number
-    person: number | null; // ForeignKey to User
+    person: number | Partner | null; // ForeignKey to User
     person_name?: string; // If serializer provides it
     date_time: string;
     split_amount: boolean;

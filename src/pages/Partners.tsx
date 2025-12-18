@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    Search, 
+import {
+    Search,
     Plus,
-    Briefcase, 
-    PieChart, 
+    Briefcase,
+    PieChart,
     Clock,
     Users,
     Loader2
 } from 'lucide-react';
-import { partnersAPI, type Partner } from '../api/partners';
+import { partnersAPI } from '../api/partners';
+import type { Partner } from '../types';
 
 const Partners: React.FC = () => {
     const navigate = useNavigate();
@@ -49,7 +50,7 @@ const Partners: React.FC = () => {
                     <p className="text-xs sm:text-base text-slate-500 mt-0.5">Manage your business partners</p>
                 </div>
                 <div className="hidden sm:flex items-center gap-3">
-                  
+
                 </div>
             </div>
 
@@ -118,7 +119,7 @@ const Partners: React.FC = () => {
                         className="w-full pl-9 pr-4 py-2 sm:py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                     />
                 </div>
-                 <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                     <div className="relative flex-1 sm:flex-none">
                         <select
                             value={filterType}
@@ -145,8 +146,8 @@ const Partners: React.FC = () => {
             {!loading && (
                 <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                     {filteredPartners.map((partner) => (
-                        <div 
-                            key={partner.id} 
+                        <div
+                            key={partner.id}
                             className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => navigate(`/partners/${partner.id}`)}
                         >
@@ -159,7 +160,7 @@ const Partners: React.FC = () => {
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-slate-900 leading-tight">{partner.name}</h3>
-                                        <p className="text-xs sm:text-sm text-slate-500 font-medium">Partner ID: {partner.id}</p>
+                                        <p className="text-xs sm:text-sm text-slate-500 font-medium">Email: {partner.email}</p>
                                     </div>
                                 </div>
                             </div>
@@ -172,8 +173,8 @@ const Partners: React.FC = () => {
             {!loading && (
                 <div className="space-y-3 sm:hidden">
                     {filteredPartners.map((partner) => (
-                        <div 
-                            key={partner.id} 
+                        <div
+                            key={partner.id}
                             className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
                             onClick={() => navigate(`/partners/${partner.id}`)}
                         >
@@ -184,7 +185,7 @@ const Partners: React.FC = () => {
                                 <div>
                                     <h3 className="font-bold text-slate-900">{partner.name}</h3>
                                     <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                        <span>ID: {partner.id}</span>
+                                        <span>Email: {partner.email}</span>
                                     </div>
                                 </div>
                             </div>
