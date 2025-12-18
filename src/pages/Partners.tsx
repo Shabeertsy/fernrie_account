@@ -18,13 +18,15 @@ const Partners: React.FC = () => {
     const [filterType, setFilterType] = useState('all');
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<{ total_transaction_count: number; total_transaction_amount: number } | null>(null);
 
     useEffect(() => {
         const fetchPartners = async () => {
             setLoading(true);
             try {
                 const data = await partnersAPI.getPartners();
-                setPartners(data);
+                setPartners(data.partners);
+                setStats(data.transaction_stats);
             } catch (error) {
                 console.error('Failed to fetch partners:', error);
             } finally {
@@ -71,8 +73,8 @@ const Partners: React.FC = () => {
                 <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-xs sm:text-sm">Active Deals</p>
-                            <p className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1">12</p>
+                            <p className="text-slate-500 text-xs sm:text-sm">Total Transactions</p>
+                            <p className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1">{stats?.total_transaction_count || 0}</p>
                         </div>
                         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <Briefcase className="text-emerald-600" size={16} />
@@ -83,8 +85,8 @@ const Partners: React.FC = () => {
                 <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-xs sm:text-sm">Revenue Share</p>
-                            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">₹4.5L</p>
+                            <p className="text-slate-500 text-xs sm:text-sm">Total Amount</p>
+                            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">₹{(stats?.total_transaction_amount || 0).toLocaleString()}</p>
                         </div>
                         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                             <PieChart className="text-purple-600" size={16} />
@@ -119,20 +121,7 @@ const Partners: React.FC = () => {
                         className="w-full pl-9 pr-4 py-2 sm:py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                     />
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="relative flex-1 sm:flex-none">
-                        <select
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 appearance-none bg-white text-sm"
-                        >
-                            <option value="all">All Types</option>
-                            <option value="financial">Financial</option>
-                            <option value="technical">Technical</option>
-                            <option value="business">Business</option>
-                        </select>
-                    </div>
-                </div>
+
             </div>
 
             {/* Loading State */}
@@ -164,6 +153,16 @@ const Partners: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                <div>
+                                    <p className="text-xs text-slate-500">Transactions</p>
+                                    <p className="font-semibold text-slate-900">{partner.transaction_count}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-slate-500">Total Amount</p>
+                                    <p className="font-semibold text-emerald-600">₹{partner.transaction_total_amount.toLocaleString()}</p>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -184,8 +183,13 @@ const Partners: React.FC = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-900">{partner.name}</h3>
-                                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                    <div className="flex flex-col gap-0.5 text-xs text-slate-500 mt-0.5">
                                         <span>Email: {partner.email}</span>
+                                        <span className="flex items-center gap-2">
+                                            <span>{partner.transaction_count} Transactions</span>
+                                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                            <span className="text-emerald-600 font-medium">₹{partner.transaction_total_amount.toLocaleString()}</span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>

@@ -26,19 +26,13 @@ const PartnerDetail: React.FC = () => {
             try {
                 // Fetch all partners to get the specific partner details
                 const partnersData = await partnersAPI.getPartners();
-                const currentPartner = partnersData.find(p => p.id === parseInt(id));
+                const currentPartner = partnersData.partners.find(p => p.id === parseInt(id));
                 setPartner(currentPartner || null);
 
-                // Fetch all company transactions
-                const txData = await companyAPI.getTransactions();
-                const allTransactions = Array.isArray(txData) ? txData : txData.results || [];
+                // Fetch split transactions for this partner using the split-transactions API
+                const splitTransactionsResponse = await companyAPI.getSplitTransactions(parseInt(id));
 
-                // Filter transactions for this partner where split_amount is true
-                const partnerTransactions = allTransactions.filter((t: CompanyTransaction) => {
-                    const personId = typeof t.person === 'object' && t.person ? t.person.id : t.person;
-                    return personId === parseInt(id) && t.split_amount === true;
-                });
-                setTransactions(partnerTransactions);
+                setTransactions(splitTransactionsResponse.results);
             } catch (error) {
                 console.error('Failed to fetch partner details:', error);
             } finally {
@@ -146,7 +140,7 @@ const PartnerDetail: React.FC = () => {
                                 <Card
                                     key={t.id}
                                     className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-                                    onClick={() => navigate(`/billing/${t.id}`)}
+                                    onClick={() => navigate(`/partners/${id}/transactions/${t.id}`)}
                                 >
                                     <div className="flex items-center gap-3">
                                         {/* Icon */}
@@ -163,13 +157,23 @@ const PartnerDetail: React.FC = () => {
                                                 <span className="mx-1">•</span>
                                                 <span className="flex items-center gap-1">{tDateStr} <span className="text-slate-300">|</span> {tTimeStr}</span>
                                             </div>
+                                            {/* Split Transaction Info */}
+                                            {t.amount_per_partner && t.number_of_partners && (
+                                                <div className="flex items-center gap-2 text-xs text-slate-600 mt-1">
+                                                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                                                        ₹{t.amount_per_partner.toLocaleString()} per partner
+                                                    </span>
+                                                    <span className="text-slate-400">•</span>
+                                                    <span>{t.number_of_partners} partners</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Amount */}
                                         <div className="flex flex-col items-end gap-1">
                                             <div className={`px-2 py-0.5 rounded text-[10px] font-medium border hidden sm:block ${t.is_closed
-                                                    ? 'bg-slate-100 text-slate-600 border-slate-200'
-                                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                                : 'bg-amber-50 text-amber-600 border-amber-100'
                                                 }`}>
                                                 {t.is_closed ? 'Closed' : 'Pending'}
                                             </div>

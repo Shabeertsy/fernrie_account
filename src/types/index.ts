@@ -1,8 +1,18 @@
 export interface Partner {
     id: number;
     name: string;
-    email:string;
+    email: string;
     person_name?: string; // Sometimes returned as person_name
+    transaction_count: number;
+    transaction_total_amount: number;
+}
+
+export interface PartnersResponse {
+    partners: Partner[];
+    transaction_stats: {
+        total_transaction_count: number;
+        total_transaction_amount: number;
+    };
 }
 
 export interface Member {
@@ -111,6 +121,12 @@ export interface CompanyTransaction {
     image: string | null;
     notes: string | null;
     is_closed: boolean;
+    admin_status?: 'new' | 'approve' | 'reject';
+    total_split_amount?: number;
+    total_received_amount?: number;
+    remaining_amount?: number;
+    amount_per_partner?: number; // From split transactions API
+    number_of_partners?: number; // From split transactions API
 }
 
 export interface PersonalTransaction {
@@ -132,4 +148,7 @@ export interface PersonalTransactionResponse {
     data: PersonalTransaction[];
     details: CompanyTransaction;
 }
+
+// API can return either an array directly or an object with data property
+export type PersonalTransactionAPIResponse = PersonalTransaction[] | PersonalTransactionResponse;
 

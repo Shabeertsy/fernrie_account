@@ -7,8 +7,41 @@ export const companyAPI = {
         if (month) params.month = month;
         if (year) params.year = year;
         if (person) params.person = person;
-        
+
         const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/company-transactions/', { params });
+        return response.data;
+    },
+
+    getTransactionRequests: async (month?: number, year?: number) => {
+        const params: any = {};
+        if (month) params.month = month;
+        if (year) params.year = year;
+
+        const response = await api.get<CompanyTransaction[]>('accounts/transaction-requests/', { params });
+        return response.data;
+    },
+
+    getPartnerCompanyTransactions: async (partnerId?: number, month?: number, year?: number) => {
+        const params: any = {};
+        if (partnerId) params.partner = partnerId;
+        if (month) params.month = month;
+        if (year) params.year = year;
+
+        const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/company-transactions/partners/', { params });
+        return response.data;
+    },
+
+    getSplitTransactions: async (personId?: number, isClosed?: boolean, page: number = 1) => {
+        const params: any = { page };
+        if (personId) params.person = personId;
+        if (isClosed !== undefined) params.is_closed = isClosed;
+
+        const response = await api.get<{ count: number, next: string | null, previous: string | null, results: CompanyTransaction[] }>('accounts/split-transactions/', { params });
+        return response.data;
+    },
+
+    approveTransactionRequest: async (id: number, status: 'approve' | 'reject') => {
+        const response = await api.patch<CompanyTransaction>(`accounts/transaction-requests/${id}/approve/`, { admin_status: status });
         return response.data;
     },
 
@@ -29,9 +62,9 @@ export const companyAPI = {
     deleteTransaction: async (id: number) => {
         await api.delete(`accounts/company-transactions/${id}/`);
     },
-    
+
     updateTransaction: async (id: number, data: FormData) => {
-         const response = await api.patch<CompanyTransaction>(`accounts/company-transactions/${id}/`, data, {
+        const response = await api.patch<CompanyTransaction>(`accounts/company-transactions/${id}/`, data, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

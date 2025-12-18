@@ -1,5 +1,5 @@
 import api from './axios';
-import type { PersonalTransactionResponse } from '../types';
+import type { PersonalTransactionResponse, PersonalTransactionAPIResponse } from '../types';
 
 export const personalAPI = {
     getPersonalTransactions: async (companyTransactionId: number) => {
@@ -8,7 +8,7 @@ export const personalAPI = {
     },
 
     getPartnerTransactionDetails: async (partnerId: number | string, transactionId: number | string) => {
-        const response = await api.get<PersonalTransactionResponse>(`accounts/personal-transactions/details/${partnerId}/${transactionId}/`);
+        const response = await api.get<PersonalTransactionAPIResponse>(`accounts/personal-transactions/details/${partnerId}/${transactionId}/`);
         return response.data;
     },
 

@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import CompanyAccounts from './pages/CompanyAccounts';
 import TransactionDetail from './pages/TransactionDetail';
 import PartnerDetail from './pages/PartnerDetail';
+import PartnerTransactionDetail from './pages/PartnerTransactionDetail';
 import BillingDetail from './pages/BillingDetail';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
             <Route path="billing/:id" element={<BillingDetail />} />
             <Route path="partners" element={<Partners />} />
             <Route path="partners/:id" element={<PartnerDetail />} />
+            <Route path="partners/:partnerId/transactions/:transactionId" element={<PartnerTransactionDetail />} />
             <Route path="clients" element={<Clients />} />
             <Route path="clients/:id" element={<ClientDetails />} />
             <Route path="todo" element={<Todo />} />

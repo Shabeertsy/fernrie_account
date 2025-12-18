@@ -14,6 +14,7 @@ import {
 import { Card } from '../components/common/Card';
 import { companyAPI } from '../api/company';
 import { personalAPI } from '../api/personal';
+import { partnersAPI } from '../api/partners';
 import type { CompanyTransaction, PersonalTransaction } from '../types';
 import { Modal } from '../components/common/Modal';
 
@@ -53,9 +54,9 @@ const BillingDetail: React.FC = () => {
                 }
 
                 if (partnerId) {
-                    const response = await personalAPI.getPartnerTransactionDetails(partnerId, parseInt(id));
+                    const response = await partnersAPI.getPartnerTransactionDetails(partnerId, parseInt(id));
                     // Check if response itself is the array, or if it has a data property
-                    const transactionsList = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                    const transactionsList = Array.isArray(response) ? response : (response && Array.isArray((response as any).data) ? (response as any).data : []);
                     setPersonalTransactions(transactionsList);
                 } else {
                     // Fallback to empty if no partner associated
