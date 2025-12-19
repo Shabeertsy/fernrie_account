@@ -19,12 +19,10 @@ import { partnersAPI } from '../api/partners';
 import { companyAPI } from '../api/company';
 import type { PersonalTransaction, CompanyTransaction, Partner } from '../types';
 import { Modal } from '../components/common/Modal';
-import { useAuthStore } from '../store/useAuthStore';
 
 const PartnerTransactionDetail: React.FC = () => {
     const { partnerId, transactionId } = useParams<{ partnerId: string; transactionId: string }>();
     const navigate = useNavigate();
-    const { user, isAdmin } = useAuthStore();
     const [partner, setPartner] = useState<Partner | null>(null);
     const [companyTransaction, setCompanyTransaction] = useState<CompanyTransaction | null>(null);
     const [personalTransactions, setPersonalTransactions] = useState<PersonalTransaction[]>([]);
@@ -182,12 +180,6 @@ const PartnerTransactionDetail: React.FC = () => {
     const tDateStr = tDateObj.toLocaleDateString();
     const tTimeStr = tDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Check if current user can manage payments (admin or own partner account)
-    const canManagePayments = isAdmin || (user && partner && (
-        user.id === partnerId ||
-        user.email === partner.email ||
-        user.id === partner.id.toString()
-    ));
 
     return (
         <div className="space-y-6 pb-24 sm:pb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -282,15 +274,13 @@ const PartnerTransactionDetail: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-900 text-lg">Payments</h3>
-                    {canManagePayments && (
-                        <button
-                            onClick={handleAddNew}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
-                        >
-                            <Plus size={16} />
-                            Add Payment
-                        </button>
-                    )}
+                    <button
+                        onClick={handleAddNew}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+                    >
+                        <Plus size={16} />
+                        Add Payment
+                    </button>
                 </div>
 
                 {personalTransactions && personalTransactions.length > 0 ? (
@@ -339,22 +329,20 @@ const PartnerTransactionDetail: React.FC = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            {canManagePayments && (
-                                                <div className="flex flex-col gap-1">
-                                                    <button
-                                                        onClick={() => handleEdit(pt)}
-                                                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(pt.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <div className="flex flex-col gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(pt)}
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(pt.id)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </Card>

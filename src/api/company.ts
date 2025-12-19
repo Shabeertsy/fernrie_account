@@ -21,6 +21,15 @@ export const companyAPI = {
         return response.data;
     },
 
+    getMyRequests: async (month?: number, year?: number) => {
+        const params: any = {};
+        if (month) params.month = month;
+        if (year) params.year = year;
+
+        const response = await api.get<CompanyTransaction[]>('accounts/my-requests/', { params });
+        return response.data;
+    },
+
     getPartnerCompanyTransactions: async (partnerId?: number, month?: number, year?: number) => {
         const params: any = {};
         if (partnerId) params.partner = partnerId;

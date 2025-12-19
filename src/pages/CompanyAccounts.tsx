@@ -5,7 +5,6 @@ import {
     ArrowUpCircle,
     ArrowDownCircle,
     Calendar,
-    User,
     Clock,
     Upload,
     Loader2,
@@ -90,7 +89,10 @@ const CompanyAccounts: React.FC = () => {
                 year = parseInt(y);
                 month = parseInt(m);
             }
-            const data = await companyAPI.getTransactionRequests(month, year);
+            // Use different API based on user role
+            const data = isAdmin
+                ? await companyAPI.getTransactionRequests(month, year)
+                : await companyAPI.getMyRequests(month, year);
             setRequests(data);
         } catch (error) {
             console.error('Failed to fetch requests:', error);
@@ -109,14 +111,11 @@ const CompanyAccounts: React.FC = () => {
     };
 
     useEffect(() => {
-        if (activeTab === 'transactions') {
-            fetchTransactions();
-        } else if (activeTab === 'payment-requests') {
-            fetchRequests();
-        }
+        fetchTransactions();
+        fetchRequests();
         fetchPartners();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedMonth, activeTab]);
+    }, [selectedMonth]);
 
     const handleSaveTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -288,35 +287,38 @@ const CompanyAccounts: React.FC = () => {
                             />
                         </div>
                     )}
-                    {isAdmin && activeTab === 'transactions' && (
-                        <Button icon={Plus} onClick={() => setIsModalOpen(true)} className="hidden sm:flex">Add New</Button>
+                    {activeTab === 'transactions' && (
+                        <Button icon={Plus} onClick={() => setIsModalOpen(true)} className="hidden sm:inline-flex">Add New</Button>
                     )}
                 </div>
             </div>
 
             {/* Tabs */}
-            {isAdmin && (
-                <div className="flex p-1 bg-slate-100 rounded-xl w-fit">
-                    <button
-                        onClick={() => setActiveTab('transactions')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'transactions'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                    >
-                        Transactions
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('payment-requests')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'payment-requests'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                    >
-                        Payment Requests
-                    </button>
-                </div>
-            )}
+            <div className="flex p-1 bg-slate-100 rounded-xl w-fit">
+                <button
+                    onClick={() => setActiveTab('transactions')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'transactions'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    Transactions
+                </button>
+                <button
+                    onClick={() => setActiveTab('payment-requests')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all relative ${activeTab === 'payment-requests'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    {isAdmin ? 'Payment Requests' : 'My Requests'}
+                    {requests.length > 0 && (
+                        <span className="ml-2 px-2 py-0.5 bg-emerald-600 text-white text-xs rounded-full">
+                            {requests.length}
+                        </span>
+                    )}
+                </button>
+            </div>
 
             {activeTab === 'transactions' ? (
                 <>
@@ -422,26 +424,30 @@ const CompanyAccounts: React.FC = () => {
                                                             {t.transaction_type === 'income' ? '+' : '-'}₹{parseFloat(t.amount).toLocaleString()}
                                                         </div>
                                                         <div className="flex items-center gap-1">
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleEdit(t);
-                                                                }}
-                                                                className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                            >
-                                                                <Edit2 size={16} />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDelete(t.id);
-                                                                }}
-                                                                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
+                                                            {isAdmin && t.admin_status !== 'approve' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEdit(t);
+                                                                    }}
+                                                                    className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Edit2 size={16} />
+                                                                </button>
+                                                            )}
+                                                            {isAdmin && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDelete(t.id);
+                                                                    }}
+                                                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -598,28 +604,6 @@ const CompanyAccounts: React.FC = () => {
                                 className="w-full pl-10 pr-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold text-lg"
                                 placeholder="0.00"
                             />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-1">Person / Entity</label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <select
-                                value={formData.person}
-                                onChange={(e) => setFormData({ ...formData, person: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all appearance-none"
-                            >
-                                <option value="">Not Specified</option>
-                                {partners.map((partner) => (
-                                    <option key={partner.id} value={partner.id}>
-                                        {partner.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                <ArrowDownCircle size={16} />
-                            </div>
                         </div>
                     </div>
 
