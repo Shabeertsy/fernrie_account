@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
-import { Save, User, Bell, Lock, DollarSign } from 'lucide-react';
+import { Save, User, Bell, Lock, IndianRupee } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 
 const Settings: React.FC = () => {
     const [saved, setSaved] = useState(false);
-    
+
     // Company Settings
     const [companyName, setCompanyName] = useState('Fernrei Accounts');
     const [companyEmail, setCompanyEmail] = useState('admin@fernrei.com');
     const [companyPhone, setCompanyPhone] = useState('+91 98765 43210');
     const [companyAddress, setCompanyAddress] = useState('123 Business Park, Mumbai, MH 400001');
-    
+
     // Currency & Billing
     const [currency, setCurrency] = useState('INR');
     const [taxRate, setTaxRate] = useState('18');
     const [invoicePrefix, setInvoicePrefix] = useState('INV');
-    
+
     // Notifications
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [invoiceReminders, setInvoiceReminders] = useState(true);
@@ -105,7 +105,7 @@ const Settings: React.FC = () => {
             <Card>
                 <div className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="text-emerald-600" size={20} />
+                        <IndianRupee className="text-emerald-600" size={20} />
                         <h2 className="text-lg font-bold text-slate-900">Currency & Billing</h2>
                     </div>
                     <p className="text-sm text-slate-500">Configure billing and invoice settings</p>

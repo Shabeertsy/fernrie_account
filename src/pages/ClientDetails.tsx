@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-    ArrowLeft, TrendingUp, TrendingDown, DollarSign, Plus, Edit2, Trash2,
+    ArrowLeft, TrendingUp, TrendingDown, IndianRupee, Plus, Edit2, Trash2,
     Phone, MapPin, Calendar, Loader2
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { clientAPI } from '../api/client';
 import { serviceAPI } from '../api/service';
+import { serviceTransactionAPI } from '../api/serviceTransaction';
 import { Modal } from '../components/common/Modal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import type { Client } from '../types/client';
 import type { Service, CreateServiceData } from '../types/service';
+import type { ServiceTransaction } from '../types/serviceTransaction';
 
 const ClientDetails: React.FC = () => {
     const { id } = useParams();
@@ -18,7 +20,15 @@ const ClientDetails: React.FC = () => {
 
     const [client, setClient] = useState<Client | null>(null);
     const [services, setServices] = useState<Service[]>([]);
+    const [transactions, setTransactions] = useState<ServiceTransaction[]>([]);
+    const [transactionSummary, setTransactionSummary] = useState<{
+        total_transactions: number;
+        total_income: number;
+        total_expense: number;
+        net_profit: number;
+    } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'transactions' | 'services'>('transactions');
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
@@ -47,14 +57,17 @@ const ClientDetails: React.FC = () => {
     useEffect(() => {
         fetchClient();
         fetchServices();
+        fetchTransactions();
     }, [clientId]);
 
     const fetchClient = async () => {
         try {
+            setError(null);
             const data = await clientAPI.getClient(clientId);
             setClient(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch client:', error);
+            setError(error?.response?.data?.detail || 'Failed to load client details');
         }
     };
 
@@ -67,6 +80,16 @@ const ClientDetails: React.FC = () => {
             console.error('Failed to fetch services:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchTransactions = async () => {
+        try {
+            const data = await serviceTransactionAPI.getServiceTransactionsByClient(clientId);
+            setTransactions(data.transactions);
+            setTransactionSummary(data.summary);
+        } catch (error) {
+            console.error('Failed to fetch transactions:', error);
         }
     };
 
@@ -137,6 +160,55 @@ const ClientDetails: React.FC = () => {
         });
     };
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'advance':
+                return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'settled':
+                return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            default:
+                return 'bg-slate-100 text-slate-700 border-slate-200';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'advance':
+                return 'Advance';
+            case 'settled':
+                return 'Settled';
+            default:
+                return 'Other';
+        }
+    };
+
+    if (error) {
+        return (
+            <div className="space-y-4">
+                <Link
+                    to="/clients"
+                    className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm sm:text-base"
+                >
+                    <ArrowLeft size={18} />
+                    Back to Clients
+                </Link>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                    <p className="text-red-700 font-medium mb-2">Failed to load client details</p>
+                    <p className="text-red-600 text-sm mb-4">{error}</p>
+                    <button
+                        onClick={() => {
+                            setError(null);
+                            fetchClient();
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (!client) {
         return (
             <div className="flex justify-center py-10">
@@ -145,9 +217,20 @@ const ClientDetails: React.FC = () => {
         );
     }
 
-    const profit = (client.profit !== undefined) ? client.profit :
-        ((client.total_income || 0) - (client.total_expense || 0));
-    const profitMargin = client.total_income ? ((profit / client.total_income) * 100).toFixed(1) : '0.0';
+    // Calculate stats from transaction summary if available, otherwise use client data
+    const profit = transactionSummary
+        ? transactionSummary.net_profit
+        : (client.profit !== undefined) ? client.profit : ((client.income || client.total_income || 0) - (client.expense || client.total_expense || 0));
+
+    const totalIncome = transactionSummary
+        ? transactionSummary.total_income
+        : (client.income || client.total_income || 0);
+
+    const totalExpense = transactionSummary
+        ? transactionSummary.total_expense
+        : (client.expense || client.total_expense || 0);
+
+    const profitMargin = totalIncome ? ((profit / totalIncome) * 100).toFixed(1) : '0.0';
 
     return (
         <div className="space-y-4 sm:space-y-6 pb-4">
@@ -219,7 +302,7 @@ const ClientDetails: React.FC = () => {
                         <p className="text-slate-500 text-xs sm:text-sm font-medium">Income</p>
                         <TrendingUp className="text-green-600 hidden sm:block" size={20} />
                     </div>
-                    <p className="text-lg sm:text-2xl font-bold text-green-600">₹{(client.total_income || 0).toLocaleString()}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-green-600">₹{(client.income || client.total_income || 0).toLocaleString()}</p>
                 </div>
 
                 <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
@@ -227,13 +310,13 @@ const ClientDetails: React.FC = () => {
                         <p className="text-slate-500 text-xs sm:text-sm font-medium">Expense</p>
                         <TrendingDown className="text-red-600 hidden sm:block" size={20} />
                     </div>
-                    <p className="text-lg sm:text-2xl font-bold text-red-600">₹{(client.total_expense || 0).toLocaleString()}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-red-600">₹{totalExpense.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
                         <p className="text-slate-500 text-xs sm:text-sm font-medium">Net Profit</p>
-                        <DollarSign className="text-emerald-600 hidden sm:block" size={20} />
+                        <IndianRupee className="text-emerald-600 hidden sm:block" size={20} />
                     </div>
                     <p className={clsx(
                         'text-lg sm:text-2xl font-bold',
@@ -289,9 +372,53 @@ const ClientDetails: React.FC = () => {
                         </div>
                     </div>
                     <div className="p-4 sm:p-6">
-                        <div className="text-center py-12 text-slate-500">
-                            <p>No transactions found</p>
-                        </div>
+                        {transactions.length > 0 ? (
+                            <div className="space-y-3">
+                                {transactions.map((transaction) => (
+                                    <div key={transaction.id} className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <IndianRupee size={16} className={transaction.transaction_type === 'income' ? "text-emerald-600" : "text-red-600"} />
+                                                    <span className="text-lg font-bold text-slate-900">
+                                                        {parseFloat(transaction.amount).toLocaleString()}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${transaction.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {transaction.transaction_type === 'income' ? 'Income' : 'Expense'}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                                                        {getStatusLabel(transaction.status)}
+                                                    </span>
+                                                </div>
+                                                <div className="mb-2">
+                                                    <Link to={`/services/${transaction.service}`} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+                                                        {transaction.service_name}
+                                                    </Link>
+                                                </div>
+                                                {transaction.notes && (
+                                                    <p className="text-sm text-slate-600 mb-2">{transaction.notes}</p>
+                                                )}
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                                    <div className="flex items-center gap-1">
+                                                        <Calendar size={12} />
+                                                        <span>{new Date(transaction.transaction_date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    {transaction.added_by && (
+                                                        <div>
+                                                            Added by <span className="font-medium text-slate-700">{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-slate-500">
+                                <p>No transactions found</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -7,8 +7,8 @@ import {
     Edit2,
     Trash2,
     Plus,
-    DollarSign,
-    Clock
+    IndianRupee,
+    Image as ImageIcon
 } from 'lucide-react';
 import { serviceAPI } from '../api/service';
 import { serviceTransactionAPI } from '../api/serviceTransaction';
@@ -23,15 +23,19 @@ const ServiceDetail: React.FC = () => {
 
     const [service, setService] = useState<Service | null>(null);
     const [transactions, setTransactions] = useState<ServiceTransaction[]>([]);
+    // Removed transactionSummary state as we verify stats locally
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<ServiceTransaction | null>(null);
 
     const [formData, setFormData] = useState<CreateServiceTransactionData>({
         service: serviceId,
+        transaction_type: 'income',
         amount: '',
         status: 'other',
-        notes: ''
+        notes: '',
+        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_time: new Date().toTimeString().slice(0, 5)
     });
 
     const [confirmDialog, setConfirmDialog] = useState({
@@ -61,6 +65,7 @@ const ServiceDetail: React.FC = () => {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
+            // Use the standard endpoint with filtering to avoid 401/Logout issues with the specialized endpoint
             const data = await serviceTransactionAPI.getServiceTransactions(serviceId);
             setTransactions(data);
         } catch (error) {
@@ -89,9 +94,12 @@ const ServiceDetail: React.FC = () => {
         setEditingTransaction(transaction);
         setFormData({
             service: transaction.service,
+            transaction_type: transaction.transaction_type,
             amount: transaction.amount,
             status: transaction.status,
-            notes: transaction.notes || ''
+            notes: transaction.notes || '',
+            transaction_date: transaction.transaction_date,
+            transaction_time: transaction.transaction_time || new Date().toTimeString().slice(0, 5) // Use stored time or default to current
         });
         setIsModalOpen(true);
     };
@@ -123,6 +131,7 @@ const ServiceDetail: React.FC = () => {
         setEditingTransaction(null);
         setFormData({
             service: serviceId,
+            transaction_type: 'income',
             amount: '',
             status: 'other',
             notes: ''
@@ -151,13 +160,14 @@ const ServiceDetail: React.FC = () => {
         }
     };
 
-    const totalAmount = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const advanceAmount = transactions
-        .filter(t => t.status === 'advance')
+    // Calculate stats locally since we are using the standard transactions endpoint
+    const totalIncome = transactions
+        .filter(t => t.transaction_type === 'income')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const settledAmount = transactions
-        .filter(t => t.status === 'settled')
+    const totalExpense = transactions
+        .filter(t => t.transaction_type === 'expense')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const netProfit = totalIncome - totalExpense;
 
     if (!service) {
         return (
@@ -171,11 +181,11 @@ const ServiceDetail: React.FC = () => {
         <div className="space-y-4 sm:space-y-6 pb-4">
             {/* Back Button */}
             <Link
-                to="/clients"
+                to={service ? `/clients/${service.client}` : '/clients'}
                 className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm sm:text-base"
             >
                 <ArrowLeft size={18} />
-                Back to Clients
+                {service ? 'Back to Client' : 'Back to Clients'}
             </Link>
 
             {/* Service Header */}
@@ -222,16 +232,16 @@ const ServiceDetail: React.FC = () => {
                     <p className="text-lg sm:text-2xl font-bold text-emerald-600">₹{parseFloat(service.amount).toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Total Received</p>
-                    <p className="text-lg sm:text-2xl font-bold text-slate-900">₹{totalAmount.toLocaleString()}</p>
+                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Total Income</p>
+                    <p className="text-lg sm:text-2xl font-bold text-emerald-600">₹{totalIncome.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Advance</p>
-                    <p className="text-lg sm:text-2xl font-bold text-blue-600">₹{advanceAmount.toLocaleString()}</p>
+                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Total Expense</p>
+                    <p className="text-lg sm:text-2xl font-bold text-red-600">₹{totalExpense.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Settled</p>
-                    <p className="text-lg sm:text-2xl font-bold text-green-600">₹{settledAmount.toLocaleString()}</p>
+                    <p className="text-slate-500 text-xs sm:text-sm mb-1">Net Profit</p>
+                    <p className={`text-lg sm:text-2xl font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>₹{netProfit.toLocaleString()}</p>
                 </div>
             </div>
 
@@ -277,9 +287,12 @@ const ServiceDetail: React.FC = () => {
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <DollarSign size={16} className="text-emerald-600" />
+                                                    <IndianRupee size={16} className={transaction.transaction_type === 'income' ? "text-emerald-600" : "text-red-600"} />
                                                     <span className="text-lg font-bold text-slate-900">
-                                                        ₹{parseFloat(transaction.amount).toLocaleString()}
+                                                        {parseFloat(transaction.amount).toLocaleString()}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${transaction.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {transaction.transaction_type === 'income' ? 'Income' : 'Expense'}
                                                     </span>
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
                                                         {getStatusLabel(transaction.status)}
@@ -288,9 +301,40 @@ const ServiceDetail: React.FC = () => {
                                                 {transaction.notes && (
                                                     <p className="text-sm text-slate-600 mb-2">{transaction.notes}</p>
                                                 )}
-                                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                                    <Clock size={12} />
-                                                    <span>{new Date(transaction.transaction_date).toLocaleString()}</span>
+                                                {transaction.image && (
+                                                    <div className="flex justify-center mb-4 mt-2">
+                                                        <a
+                                                            href={transaction.image.startsWith('http') ? transaction.image : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${transaction.image}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-block relative h-20 w-20 rounded-lg overflow-hidden border border-slate-200 group bg-white shadow-sm"
+                                                        >
+                                                            <img
+                                                                src={transaction.image.startsWith('http') ? transaction.image : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${transaction.image}`}
+                                                                alt="Receipt"
+                                                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = 'none';
+                                                                    e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                                                                }}
+                                                            />
+                                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                                <ImageIcon className="text-slate-400 w-6 h-6 group-hover:hidden" />
+                                                                <ImageIcon className="text-emerald-600 w-6 h-6 hidden group-hover:block" />
+                                                            </div>
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                                    <div className="flex items-center gap-1">
+                                                        <Calendar size={12} />
+                                                        <span>{new Date(transaction.transaction_date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    {transaction.added_by && (
+                                                        <div>
+                                                            Added by <span className="font-medium text-slate-700">{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1">
@@ -324,10 +368,36 @@ const ServiceDetail: React.FC = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={closeModal}
-                title={editingTransaction ? "Edit Transaction" : "Add New Transaction"}
+                title={editingTransaction ? "Edit Transaction" : "Create Invoice"}
                 size="sm"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Transaction Type</label>
+                        <div className="flex p-1 bg-slate-100 rounded-xl">
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, transaction_type: 'income' })}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${formData.transaction_type === 'income'
+                                    ? 'bg-white text-emerald-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Income
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, transaction_type: 'expense' })}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${formData.transaction_type === 'expense'
+                                    ? 'bg-white text-red-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Expense
+                            </button>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Amount *</label>
                         <input
@@ -336,9 +406,30 @@ const ServiceDetail: React.FC = () => {
                             step="0.01"
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-900"
                             placeholder="0.00"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                            <input
+                                type="date"
+                                value={formData.transaction_date}
+                                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                                className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                            <input
+                                type="time"
+                                value={formData.transaction_time}
+                                onChange={(e) => setFormData({ ...formData, transaction_time: e.target.value })}
+                                className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -347,7 +438,7 @@ const ServiceDetail: React.FC = () => {
                             required
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value as 'advance' | 'settled' | 'other' })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-700"
                         >
                             <option value="other">Other</option>
                             <option value="advance">Advance</option>
@@ -355,21 +446,59 @@ const ServiceDetail: React.FC = () => {
                         </select>
                     </div>
 
+                    {/* Receipt / Image Upload */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Receipt / Image</label>
+                        <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer bg-slate-50 relative group">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        setFormData({ ...formData, image: file });
+                                    }
+                                }}
+                                className="hidden"
+                                id="receipt-upload"
+                            />
+                            <label htmlFor="receipt-upload" className="cursor-pointer block">
+                                <span className="text-emerald-600 font-medium text-sm block mb-1 group-hover:underline">
+                                    {formData.image ? (formData.image as File).name : 'Upload Screenshot / Receipt'}
+                                </span>
+                                <p className="text-xs text-slate-500">PNG, JPG up to 10MB</p>
+                            </label>
+                            {formData.image && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setFormData({ ...formData, image: undefined });
+                                    }}
+                                    className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                                    title="Remove image"
+                                >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
                         <textarea
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none h-20"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none h-20 text-slate-700"
                             placeholder="Add notes..."
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
+                        className="w-full py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-semibold shadow-sm text-lg"
                     >
-                        {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
+                        {editingTransaction ? 'Update Transaction' : 'Create Invoice'}
                     </button>
                 </form>
             </Modal>

@@ -6,9 +6,12 @@ export interface Client {
     address: string | null;
     company_name: string | null;
     status: string | null;
+    income?: number;
+    expense?: number;
+    profit?: number;
+    // Legacy fields for backward compatibility
     total_income?: number;
     total_expense?: number;
-    profit?: number;
     created_at: string;
     updated_at: string;
 }

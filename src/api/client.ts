@@ -4,8 +4,8 @@ import type { Client, CreateClientData, UpdateClientData } from '../types/client
 export const clientAPI = {
     // Get all clients
     getClients: async () => {
-        const response = await api.get<Client[]>('accounts/clients/');
-        return response.data;
+        const response = await api.get<{ clients: Client[], statistics: { total: number, active: number, inactive: number } }>('accounts/clients/');
+        return response.data.clients;
     },
 
     // Get a single client

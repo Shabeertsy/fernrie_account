@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    Users, DollarSign, TrendingUp, Receipt, Plus, Download, FileText, CheckSquare, ArrowRight,
+import {
+    Users, IndianRupee, TrendingUp, Receipt, Plus, Download, FileText, CheckSquare, ArrowRight,
     ArrowUp, ArrowDown
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -9,6 +9,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { RevenueChart } from '../components/dashboard/RevenueChart';
 import { MemberDistributionChart } from '../components/dashboard/MemberDistributionChart';
+import { getDashboardStats } from '../api/dashboard';
 
 const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
     <Card className="hover:shadow-md transition-all duration-300 border-l-4 border-l-transparent hover:border-l-emerald-500 p-4 sm:p-6">
@@ -33,19 +34,47 @@ const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
-    
+    const [stats, setStats] = React.useState<any>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await getDashboardStats();
+                setStats(data);
+            } catch (error) {
+                console.error('Failed to fetch dashboard stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     // Data for Charts
-    const cashFlowData = [
+    const cashFlowData = stats ? [
+        { name: 'Income', value: stats.income_vs_expense.income },
+        { name: 'Expense', value: stats.income_vs_expense.expense },
+    ] : [
         { name: 'Income', value: 0 },
         { name: 'Expense', value: 0 },
     ];
     const CASHFLOW_COLORS = ['#10b981', '#ef4444']; // Emerald for Income, Red for Expense
 
-    const transactions: any[] = [];
+    const transactions = stats?.recent_transactions || [];
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 sm:pb-4">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -63,17 +92,17 @@ const Dashboard: React.FC = () => {
                 <Card className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-none p-6 relative overflow-hidden shadow-xl shadow-emerald-200">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl opacity-10 -mr-16 -mt-16"></div>
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-900 rounded-full blur-3xl opacity-20 -ml-16 -mb-16"></div>
-                    
+
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 text-emerald-100 mb-1">
                             <span className="text-sm font-medium">Total Revenue</span>
                             <TrendingUp size={14} />
                         </div>
-                        <h2 className="text-4xl font-bold mb-8">₹0</h2>
+                        <h2 className="text-4xl font-bold mb-8">₹{stats?.total_revenue?.toLocaleString() || 0}</h2>
 
                         <div className="grid grid-cols-4 gap-2">
                             <div className="flex flex-col items-center gap-2">
-                                <button 
+                                <button
                                     onClick={() => navigate('/billing')}
                                     className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
                                 >
@@ -82,7 +111,7 @@ const Dashboard: React.FC = () => {
                                 <span className="text-[10px] text-emerald-50 font-medium">Invoice</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button 
+                                <button
                                     onClick={() => navigate('/clients')}
                                     className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
                                 >
@@ -91,7 +120,7 @@ const Dashboard: React.FC = () => {
                                 <span className="text-[10px] text-emerald-50 font-medium">Client</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button 
+                                <button
                                     onClick={() => navigate('/partners')}
                                     className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
                                 >
@@ -100,7 +129,7 @@ const Dashboard: React.FC = () => {
                                 <span className="text-[10px] text-emerald-50 font-medium">Partner</span>
                             </div>
                             <div className="flex flex-col items-center gap-2">
-                                <button 
+                                <button
                                     onClick={() => navigate('/todo')}
                                     className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors text-white active:scale-95"
                                 >
@@ -117,18 +146,18 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-3 gap-3 sm:hidden">
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Clients</span>
-                    <span className="text-lg font-bold text-slate-900">0</span>
-                    <span className="text-[10px] text-slate-400">+0 new</span>
+                    <span className="text-lg font-bold text-slate-900">{stats?.clients?.count || 0}</span>
+                    <span className="text-[10px] text-emerald-500">+{stats?.clients?.new || 0} new</span>
                 </Card>
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Pending</span>
-                    <span className="text-lg font-bold text-slate-900">0</span>
-                    <span className="text-[10px] text-slate-400">-0 tasks</span>
+                    <span className="text-lg font-bold text-slate-900">{stats?.pending_tasks?.count || 0}</span>
+                    <span className="text-[10px] text-slate-400">tasks</span>
                 </Card>
                 <Card className="p-3 bg-white border-slate-100 flex flex-col items-center justify-center text-center">
                     <span className="text-xs text-slate-500 mb-1">Partners</span>
-                    <span className="text-lg font-bold text-slate-900">0</span>
-                    <span className="text-[10px] text-slate-400">+0 new</span>
+                    <span className="text-lg font-bold text-slate-900">{stats?.partners?.count || 0}</span>
+                    <span className="text-[10px] text-emerald-500">+{stats?.partners?.new || 0} new</span>
                 </Card>
             </div>
 
@@ -138,10 +167,10 @@ const Dashboard: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-slate-500 text-sm mb-1">Income vs Expense</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-4">₹0</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4">₹{stats?.income_vs_expense?.net_profit?.toLocaleString() || 0}</h3>
                             <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-full px-3 py-1.5 w-fit">
                                 <span className="text-slate-600">😊</span>
-                                <span className="text-[10px] text-slate-700 font-medium">Net Profit: ₹0</span>
+                                <span className="text-[10px] text-slate-700 font-medium">Net Profit: ₹{stats?.income_vs_expense?.net_profit?.toLocaleString() || 0}</span>
                             </div>
                         </div>
                         <div className="w-24 h-24 relative">
@@ -184,29 +213,29 @@ const Dashboard: React.FC = () => {
             <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <StatCard
                     title="Clients"
-                    value="0"
-                    change="+0"
+                    value={stats?.clients?.count || 0}
+                    change={`+${stats?.clients?.new || 0}`}
                     icon={Users}
                     color="bg-blue-500"
                 />
                 <StatCard
                     title="Revenue"
-                    value="₹0"
+                    value={`₹${stats?.total_revenue?.toLocaleString() || 0}`}
                     change="+0%"
-                    icon={DollarSign}
+                    icon={IndianRupee}
                     color="bg-emerald-500"
                 />
                 <StatCard
                     title="Pending"
-                    value="0"
-                    change="-0"
+                    value={stats?.pending_tasks?.count || 0}
+                    change="tasks"
                     icon={Receipt}
                     color="bg-amber-500"
                 />
                 <StatCard
                     title="Partners"
-                    value="0"
-                    change="+0"
+                    value={stats?.partners?.count || 0}
+                    change={`+${stats?.partners?.new || 0}`}
                     icon={Users}
                     color="bg-violet-500"
                 />
@@ -231,23 +260,28 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="divide-y divide-slate-100 space-y-3 sm:space-y-0">
                         {transactions.length > 0 ? (
-                            transactions.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl sm:rounded-none border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl ${item.expense ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center text-xs font-bold`}>
-                                            {item.initial}
+                            transactions.map((item: any) => {
+                                const isExpense = item.type.toLowerCase() === 'expense';
+                                return (
+                                    <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl sm:rounded-none border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-xl ${isExpense ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center text-xs font-bold`}>
+                                                {item.type.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-900 text-sm">{item.type}</p>
+                                                <p className="text-xs text-slate-500">{item.notes}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-semibold text-slate-900 text-sm">{item.name}</p>
-                                            <p className="text-xs text-slate-500">{item.desc}</p>
+                                        <div className="text-right">
+                                            <p className={`font-bold text-sm ${isExpense ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                {isExpense ? '-' : '+'}₹{item.amount?.toLocaleString()}
+                                            </p>
+                                            <p className="text-xs text-slate-400">{item.date}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`font-bold text-sm ${item.expense ? 'text-red-600' : 'text-emerald-600'}`}>{item.amount}</p>
-                                        <p className="text-xs text-slate-400">{item.time}</p>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="text-center py-12 text-slate-500">
                                 <p>No transactions yet</p>

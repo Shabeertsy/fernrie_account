@@ -208,7 +208,7 @@ const Clients: React.FC = () => {
                                 {filteredClients.length > 0 ? (
                                     filteredClients.map((client) => {
                                         const profit = (client.profit !== undefined) ? client.profit :
-                                            ((client.total_income || 0) - (client.total_expense || 0));
+                                            ((client.income || client.total_income || 0) - (client.expense || client.total_expense || 0));
                                         const isProfit = profit >= 0;
 
                                         return (
@@ -231,7 +231,7 @@ const Clients: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-sm font-semibold text-emerald-600">
-                                                        ₹{(client.total_income || 0).toLocaleString()}
+                                                        ₹{(client.income || client.total_income || 0).toLocaleString()}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -329,12 +329,12 @@ const Clients: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                         <div className="bg-emerald-50 rounded-lg p-2">
                                             <p className="text-xs text-slate-500">Income</p>
-                                            <p className="text-sm font-semibold text-emerald-600">₹{(client.total_income || 0).toLocaleString()}</p>
+                                            <p className="text-sm font-semibold text-emerald-600">₹{(client.income || client.total_income || 0).toLocaleString()}</p>
                                         </div>
                                         <div className="bg-slate-50 rounded-lg p-2">
                                             <p className="text-xs text-slate-500">Profit</p>
-                                            <p className={`text-sm font-semibold ${((client.profit !== undefined) ? client.profit : ((client.total_income || 0) - (client.total_expense || 0))) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                ₹{Math.abs((client.profit !== undefined) ? client.profit : ((client.total_income || 0) - (client.total_expense || 0))).toLocaleString()}
+                                            <p className={`text-sm font-semibold ${((client.profit !== undefined) ? client.profit : ((client.income || client.total_income || 0) - (client.expense || client.total_expense || 0))) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                ₹{Math.abs((client.profit !== undefined) ? client.profit : ((client.income || client.total_income || 0) - (client.expense || client.total_expense || 0))).toLocaleString()}
                                             </p>
                                         </div>
                                     </div>

@@ -4,11 +4,12 @@ import {
     Plus,
     Filter,
     Clock,
-    DollarSign,
+    IndianRupee,
     Loader2,
     Edit2,
     Trash2,
-    Calendar
+    Calendar,
+    Image as ImageIcon
 } from 'lucide-react';
 import { serviceTransactionAPI } from '../api/serviceTransaction';
 import { serviceAPI } from '../api/service';
@@ -25,17 +26,21 @@ const Billing: React.FC = () => {
     const [services, setServices] = useState<Service[]>([]);
     const [filteredServices, setFilteredServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'advance' | 'settled' | 'other'>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<ServiceTransaction | null>(null);
 
-    const [formData, setFormData] = useState<CreateServiceTransactionData & { client_id?: number }>({
+    const [formData, setFormData] = useState<CreateServiceTransactionData & { client_id?: number; image?: File; transaction_date?: string; transaction_time?: string }>({
         service: 0,
         client_id: 0,
+        transaction_type: 'income',
         amount: '',
         status: 'other',
-        notes: ''
+        notes: '',
+        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_time: new Date().toTimeString().slice(0, 5)
     });
 
     const [confirmDialog, setConfirmDialog] = useState({
@@ -116,9 +121,12 @@ const Billing: React.FC = () => {
         setFormData({
             service: transaction.service,
             client_id: service?.client || 0,
+            transaction_type: transaction.transaction_type,
             amount: transaction.amount,
             status: transaction.status,
-            notes: transaction.notes || ''
+            notes: transaction.notes || '',
+            transaction_date: transaction.transaction_date,
+            transaction_time: transaction.transaction_time
         });
         setIsModalOpen(true);
     };
@@ -151,24 +159,13 @@ const Billing: React.FC = () => {
         setFormData({
             service: 0,
             client_id: 0,
+            transaction_type: 'income',
             amount: '',
             status: 'other',
-            notes: ''
+            notes: '',
+            transaction_date: new Date().toISOString().split('T')[0],
+            transaction_time: new Date().toTimeString().slice(0, 5)
         });
-    };
-
-    const getServiceName = (serviceId: number) => {
-        const service = services.find(s => s.id === serviceId);
-        return service?.service_name || 'Unknown Service';
-    };
-
-    const getClientName = (serviceId: number) => {
-        const service = services.find(s => s.id === serviceId);
-        if (service) {
-            const client = clients.find(c => c.id === service.client);
-            return client?.name || 'Unknown Client';
-        }
-        return 'Unknown Client';
     };
 
     const getStatusColor = (status: string) => {
@@ -194,20 +191,19 @@ const Billing: React.FC = () => {
     };
 
     const filteredTransactions = transactions.filter(transaction => {
-        const serviceName = getServiceName(transaction.service).toLowerCase();
-        const clientName = getClientName(transaction.service).toLowerCase();
+        const serviceName = transaction.service_name?.toLowerCase() || '';
+        const clientName = transaction.client_name?.toLowerCase() || '';
         const matchesSearch = serviceName.includes(searchTerm.toLowerCase()) ||
             clientName.includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
 
-    const totalAmount = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const advanceAmount = transactions
-        .filter(t => t.status === 'advance')
+    const totalIncome = transactions
+        .filter(t => t.transaction_type === 'income')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const settledAmount = transactions
-        .filter(t => t.status === 'settled')
+    const totalExpense = transactions
+        .filter(t => t.transaction_type === 'expense')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
     return (
@@ -228,16 +224,35 @@ const Billing: React.FC = () => {
                 </button>
             </div>
 
+            {/* Error Display */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="flex-1">
+                        <p className="text-red-700 font-medium">Failed to load billing data</p>
+                        <p className="text-red-600 text-sm mt-1">{error}</p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setError(null);
+                            fetchTransactions();
+                        }}
+                        className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-xs sm:text-sm">Total</p>
-                            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">₹{totalAmount.toLocaleString()}</p>
+                            <p className="text-slate-500 text-xs sm:text-sm">Income</p>
+                            <p className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1">₹{totalIncome.toLocaleString()}</p>
                         </div>
                         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                            <DollarSign className="text-emerald-600" size={16} />
+                            <IndianRupee className="text-emerald-600" size={16} />
                         </div>
                     </div>
                 </div>
@@ -245,23 +260,25 @@ const Billing: React.FC = () => {
                 <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-xs sm:text-sm">Advance</p>
-                            <p className="text-xl sm:text-2xl font-bold text-blue-600 mt-1">₹{advanceAmount.toLocaleString()}</p>
+                            <p className="text-slate-500 text-xs sm:text-sm">Expense</p>
+                            <p className="text-xl sm:text-2xl font-bold text-red-600 mt-1">₹{totalExpense.toLocaleString()}</p>
+                        </div>
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <IndianRupee className="text-red-600" size={16} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-slate-500 text-xs sm:text-sm">Net</p>
+                            <p className={`text-xl sm:text-2xl font-bold mt-1 ${(totalIncome - totalExpense) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                ₹{(totalIncome - totalExpense).toLocaleString()}
+                            </p>
                         </div>
                         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Clock className="text-blue-600" size={16} />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-slate-500 text-xs sm:text-sm">Settled</p>
-                            <p className="text-xl sm:text-2xl font-bold text-emerald-600 mt-1">₹{settledAmount.toLocaleString()}</p>
-                        </div>
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                            <DollarSign className="text-emerald-600" size={16} />
+                            <IndianRupee className="text-blue-600" size={16} />
                         </div>
                     </div>
                 </div>
@@ -329,13 +346,44 @@ const Billing: React.FC = () => {
                             <div key={transaction.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <h3 className="font-bold text-slate-900">{getClientName(transaction.service)}</h3>
-                                        <p className="text-xs text-slate-500 font-medium">{getServiceName(transaction.service)}</p>
+                                        <h3 className="font-bold text-slate-900">{transaction.client_name}</h3>
+                                        <p className="text-xs text-slate-500 font-medium">{transaction.service_name}</p>
                                     </div>
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(transaction.status)}`}>
-                                        {getStatusLabel(transaction.status)}
-                                    </span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${transaction.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                            {transaction.transaction_type === 'income' ? 'Income' : 'Expense'}
+                                        </span>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(transaction.status)}`}>
+                                            {getStatusLabel(transaction.status)}
+                                        </span>
+                                    </div>
                                 </div>
+
+                                {transaction.image && (
+                                    <div className="flex justify-center mb-4 mt-2">
+                                        <a
+                                            href={transaction.image.startsWith('http') ? transaction.image : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${transaction.image}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-block relative h-20 w-20 rounded-lg overflow-hidden border border-slate-200 group bg-slate-50 shadow-sm"
+                                        >
+                                            <img
+                                                src={transaction.image.startsWith('http') ? transaction.image : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${transaction.image}`}
+                                                alt="Receipt"
+                                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                onError={(e) => {
+                                                    // Fallback if image fails to load
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <ImageIcon className="text-slate-400 w-6 h-6 group-hover:hidden" />
+                                                <ImageIcon className="text-emerald-600 w-6 h-6 hidden group-hover:block" />
+                                            </div>
+                                        </a>
+                                    </div>
+                                )}
 
                                 <div className="flex justify-between items-end">
                                     <div className="space-y-1">
@@ -343,6 +391,11 @@ const Billing: React.FC = () => {
                                             <Clock size={14} />
                                             <span>{new Date(transaction.transaction_date).toLocaleDateString()}</span>
                                         </div>
+                                        {transaction.added_by && (
+                                            <div className="text-xs text-slate-500">
+                                                Added by: <span className="font-medium text-slate-700">{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                            </div>
+                                        )}
                                         <p className="text-lg font-bold text-slate-900">₹{parseFloat(transaction.amount).toLocaleString()}</p>
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -372,23 +425,53 @@ const Billing: React.FC = () => {
                                     <tr>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Service</th>
+                                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Receipt</th>
+                                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Added By</th>
                                         <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
                                     {filteredTransactions.map((transaction) => (
                                         <tr key={transaction.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{getClientName(transaction.service)}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-700">{getServiceName(transaction.service)}</td>
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{transaction.client_name}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-700">{transaction.service_name}</td>
+                                            <td className="px-6 py-4">
+                                                {transaction.image ? (
+                                                    <a
+                                                        href={transaction.image.startsWith('http') ? transaction.image : `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}${transaction.image}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center p-2 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors border border-transparent hover:border-emerald-200"
+                                                        title="View Receipt"
+                                                    >
+                                                        <ImageIcon size={16} />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${transaction.transaction_type === 'income' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                                    {transaction.transaction_type === 'income' ? 'Income' : 'Expense'}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{parseFloat(transaction.amount).toLocaleString()}</td>
                                             <td className="px-6 py-4 text-sm text-slate-600">{new Date(transaction.transaction_date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(transaction.status)}`}>
                                                     {getStatusLabel(transaction.status)}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {transaction.added_by ? (
+                                                    <span>{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
@@ -413,12 +496,14 @@ const Billing: React.FC = () => {
                         </div>
                     </div>
 
-                    {filteredTransactions.length === 0 && (
-                        <div className="text-center py-12 bg-white sm:bg-transparent rounded-xl border border-slate-200 sm:border-none">
-                            <Calendar className="mx-auto text-slate-300" size={48} />
-                            <p className="text-slate-500 mt-2">No transactions found</p>
-                        </div>
-                    )}
+                    {
+                        filteredTransactions.length === 0 && (
+                            <div className="text-center py-12 bg-white sm:bg-transparent rounded-xl border border-slate-200 sm:border-none">
+                                <Calendar className="mx-auto text-slate-300" size={48} />
+                                <p className="text-slate-500 mt-2">No transactions found</p>
+                            </div>
+                        )
+                    }
                 </>
             )}
 
@@ -430,13 +515,14 @@ const Billing: React.FC = () => {
                 size="sm"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Client & Service Selection */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Client *</label>
                         <select
                             required
                             value={formData.client_id}
                             onChange={(e) => setFormData({ ...formData, client_id: parseInt(e.target.value), service: 0 })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-700"
                             disabled={!!editingTransaction}
                         >
                             <option value={0}>Select Client</option>
@@ -452,19 +538,56 @@ const Billing: React.FC = () => {
                             required
                             value={formData.service}
                             onChange={(e) => setFormData({ ...formData, service: parseInt(e.target.value) })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-700"
                             disabled={!formData.client_id || !!editingTransaction}
                         >
-                            <option value={0}>Select Service</option>
+                            <option value={0}>
+                                {!formData.client_id
+                                    ? 'Please select a client first'
+                                    : filteredServices.length === 0
+                                        ? 'No services available for this client'
+                                        : 'Select Service'}
+                            </option>
                             {filteredServices.map(service => (
                                 <option key={service.id} value={service.id}>{service.service_name}</option>
                             ))}
                         </select>
                         {formData.client_id && filteredServices.length === 0 && (
-                            <p className="text-xs text-slate-500 mt-1">No services found for this client</p>
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                <span>⚠️</span>
+                                <span>This client has no services. Please add a service first.</span>
+                            </p>
                         )}
                     </div>
 
+                    {/* Transaction Type Tabs */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Transaction Type</label>
+                        <div className="flex p-1 bg-slate-100 rounded-xl">
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, transaction_type: 'income' })}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${formData.transaction_type === 'income'
+                                    ? 'bg-white text-emerald-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Income
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, transaction_type: 'expense' })}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${formData.transaction_type === 'expense'
+                                    ? 'bg-white text-red-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Expense
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Amount */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Amount *</label>
                         <input
@@ -473,18 +596,41 @@ const Billing: React.FC = () => {
                             step="0.01"
                             value={formData.amount}
                             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-900"
                             placeholder="0.00"
                         />
                     </div>
 
+                    {/* Date & Time */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                            <input
+                                type="date"
+                                value={formData.transaction_date}
+                                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                                className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                            <input
+                                type="time"
+                                value={formData.transaction_time}
+                                onChange={(e) => setFormData({ ...formData, transaction_time: e.target.value })}
+                                className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Status */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Status *</label>
                         <select
                             required
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value as 'advance' | 'settled' | 'other' })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-700"
                         >
                             <option value="other">Other</option>
                             <option value="advance">Advance</option>
@@ -492,19 +638,58 @@ const Billing: React.FC = () => {
                         </select>
                     </div>
 
+                    {/* Image Upload */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Receipt / Image</label>
+                        <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer bg-slate-50 relative group">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        setFormData({ ...formData, image: file });
+                                    }
+                                }}
+                                className="hidden"
+                                id="billing-receipt-upload"
+                            />
+                            <label htmlFor="billing-receipt-upload" className="cursor-pointer block">
+                                <span className="text-emerald-600 font-medium text-sm block mb-1 group-hover:underline">
+                                    {formData.image ? (formData.image as File).name : 'Upload Screenshot / Receipt'}
+                                </span>
+                                <p className="text-xs text-slate-500">PNG, JPG up to 10MB</p>
+                            </label>
+                            {formData.image && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setFormData({ ...formData, image: undefined });
+                                    }}
+                                    className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                                    title="Remove image"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Notes */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
                         <textarea
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none h-20"
+                            className="w-full px-4 py-2 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none h-20 text-slate-700"
                             placeholder="Add notes..."
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
+                        className="w-full py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-semibold shadow-sm text-lg"
                     >
                         {editingTransaction ? 'Update Transaction' : 'Create Invoice'}
                     </button>

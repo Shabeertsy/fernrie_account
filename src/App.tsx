@@ -15,6 +15,7 @@ import TransactionDetail from './pages/TransactionDetail';
 import PartnerDetail from './pages/PartnerDetail';
 import PartnerTransactionDetail from './pages/PartnerTransactionDetail';
 import BillingDetail from './pages/BillingDetail';
+import ServiceDetail from './pages/ServiceDetail';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="billing" element={<Billing />} />
             <Route path="billing/:id" element={<BillingDetail />} />
+            <Route path="services/:id" element={<ServiceDetail />} />
             <Route path="partners" element={<Partners />} />
             <Route path="partners/:id" element={<PartnerDetail />} />
             <Route path="partners/:partnerId/transactions/:transactionId" element={<PartnerTransactionDetail />} />
