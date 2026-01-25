@@ -405,7 +405,7 @@ const ClientDetails: React.FC = () => {
                                                     </div>
                                                     {transaction.added_by && (
                                                         <div>
-                                                            Added by <span className="font-medium text-slate-700">{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                            Added by: <span className="font-medium text-slate-700">{transaction.added_by.person_name || transaction.added_by.first_name || transaction.added_by.username}</span>
                                                         </div>
                                                     )}
                                                 </div>

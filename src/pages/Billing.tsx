@@ -393,7 +393,7 @@ const Billing: React.FC = () => {
                                         </div>
                                         {transaction.added_by && (
                                             <div className="text-xs text-slate-500">
-                                                Added by: <span className="font-medium text-slate-700">{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                Added by: <span className="font-medium text-slate-700">{transaction.added_by.person_name || transaction.added_by.first_name || transaction.added_by.username}</span>
                                             </div>
                                         )}
                                         <p className="text-lg font-bold text-slate-900">₹{parseFloat(transaction.amount).toLocaleString()}</p>
@@ -468,7 +468,7 @@ const Billing: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600">
                                                 {transaction.added_by ? (
-                                                    <span>{transaction.added_by.first_name || transaction.added_by.username}</span>
+                                                    <span>{transaction.added_by.person_name || transaction.added_by.first_name || transaction.added_by.username}</span>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
                                                 )}

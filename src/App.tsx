@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard';
@@ -53,6 +54,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
+      <InstallPrompt />
     </Router>
   );
 }

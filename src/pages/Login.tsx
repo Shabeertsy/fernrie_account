@@ -35,8 +35,8 @@ const Login: React.FC = () => {
             <div className="w-full max-w-md">
                 {/* Logo and Title */}
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
-                        <span className="text-white font-bold text-4xl">F</span>
+                    <div className="w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                        <img src="/logo.png" alt="Fernrei Logo" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
                     <p className="text-slate-500">Fernrei Accounts Dashboard</p>
@@ -109,7 +109,7 @@ const Login: React.FC = () => {
                     </form>
 
                     <div className="mt-6 pt-6 border-t border-slate-100">
-                      
+
                     </div>
                 </Card>
 

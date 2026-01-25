@@ -4,8 +4,16 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
+import { useNotifications } from '../../hooks/useNotifications';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
 const MainLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Initialize WebSocket & FCM connection
+    useNotifications();
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -25,6 +33,7 @@ const MainLayout: React.FC = () => {
                 {/* Mobile Bottom Navigation */}
                 <BottomNav />
             </div>
+            <ToastContainer position="top-right" autoClose={5000} />
         </div>
     );
 };

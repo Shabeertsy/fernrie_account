@@ -33,8 +33,8 @@ const Header: React.FC = () => {
                 <div className="flex items-center gap-3">
                     {/* Mobile Logo/Brand */}
                     <div className="lg:hidden flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                            F
+                        <div className="w-8 h-8 flex items-center justify-center">
+                            <img src="/logo.png" alt="Fernrei Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="font-bold text-slate-800 text-lg">Fernrei</span>
                     </div>

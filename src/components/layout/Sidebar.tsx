@@ -57,8 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             >
                 <div className="flex items-center justify-between h-16 px-6 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-xl">F</span>
+                        <div className="w-8 h-8 flex items-center justify-center">
+                            <img src="/logo.png" alt="Fernrei Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="font-bold text-slate-800 text-lg">Fernrei Accounts</span>
                     </div>

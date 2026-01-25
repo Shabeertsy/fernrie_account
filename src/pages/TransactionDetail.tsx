@@ -7,9 +7,11 @@ import {
     Calendar,
     Clock,
     Loader2,
-    User
+    User,
+    Plus
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
+import { Modal } from '../components/common/Modal';
 import { companyAPI } from '../api/company';
 import { partnersAPI } from '../api/partners';
 import { personalAPI } from '../api/personal';
@@ -23,41 +25,93 @@ const TransactionDetail: React.FC = () => {
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!id) return;
-            setLoading(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        user: '',
+        amount: '',
+        payment_method: 'Cash',
+        payment_date: new Date().toISOString().split('T')[0],
+        notes: '',
+        is_completed: true
+    });
+
+    const fetchData = async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            // Fetch main transaction
+            const data = await companyAPI.getTransaction(parseInt(id));
+            setTransaction(data);
+
+            // Fetch partners to resolve names
+            const partnersData = await partnersAPI.getPartners();
+            setPartners(partnersData.partners);
+
+            // Fetch related personal transactions
             try {
-                // Fetch main transaction
-                const data = await companyAPI.getTransaction(parseInt(id));
-                setTransaction(data);
-
-                // Fetch partners to resolve names
-                const partnersData = await partnersAPI.getPartners();
-                setPartners(partnersData.partners);
-
-                // Fetch related personal transactions
-                try {
-                    const relatedData = await personalAPI.getPersonalTransactions(parseInt(id));
-                    if (relatedData && Array.isArray(relatedData.data)) {
-                        setRelatedTransactions(relatedData.data);
-                    } else {
-                        console.warn('Unexpected format for related transactions:', relatedData);
-                        setRelatedTransactions([]);
-                    }
-                } catch (innerError) {
-                    console.error('Failed to fetch related transactions:', innerError);
+                const relatedData = await personalAPI.getPersonalTransactions(parseInt(id));
+                if (relatedData && Array.isArray(relatedData.data)) {
+                    setRelatedTransactions(relatedData.data);
+                } else {
+                    // console.warn('Unexpected format for related transactions:', relatedData);
                     setRelatedTransactions([]);
                 }
-            } catch (error) {
-                console.error('Failed to fetch transaction details:', error);
-            } finally {
-                setLoading(false);
+            } catch (innerError) {
+                console.error('Failed to fetch related transactions:', innerError);
+                setRelatedTransactions([]);
             }
-        };
+        } catch (error) {
+            console.error('Failed to fetch transaction details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchData();
     }, [id]);
+
+    const handleAddPayment = () => {
+        // Pre-select user if transaction specific to a person
+        let userId = '';
+        if (transaction?.person) {
+            if (typeof transaction.person === 'object') {
+                userId = transaction.person.id.toString();
+            } else {
+                userId = transaction.person.toString();
+            }
+        }
+
+        setFormData({
+            user: userId,
+            amount: '',
+            payment_method: 'Cash',
+            payment_date: new Date().toISOString().split('T')[0],
+            notes: '',
+            is_completed: true
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!id) return;
+
+        setSubmitting(true);
+        try {
+            await personalAPI.createPersonalTransaction({
+                ...formData,
+                transaction: parseInt(id)
+            });
+            setIsModalOpen(false);
+            fetchData();
+        } catch (error) {
+            console.error('Failed to create personal transaction:', error);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     // Helper to get person name from ID or notes
     const getPersonDisplay = (t: CompanyTransaction) => {
@@ -163,7 +217,16 @@ const TransactionDetail: React.FC = () => {
 
             {/* Related Transactions */}
             <div className="space-y-4">
-                <h3 className="font-bold text-slate-900 text-lg">Personal Transactions</h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-900 text-lg">Personal Transactions</h3>
+                    <button
+                        onClick={handleAddPayment}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                    >
+                        <Plus size={16} />
+                        Add Payment
+                    </button>
+                </div>
                 {relatedTransactions && relatedTransactions.length > 0 ? (
                     <div className="space-y-3">
                         {relatedTransactions.map((t) => {
@@ -222,6 +285,109 @@ const TransactionDetail: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Add Payment Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title="Add Payment"
+                size="sm"
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">User *</label>
+                        <select
+                            required
+                            value={formData.user}
+                            onChange={(e) => setFormData({ ...formData, user: e.target.value })}
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-700 appearance-none"
+                        >
+                            <option value="">Select User</option>
+                            {partners.map(partner => (
+                                <option key={partner.id} value={partner.id}>{partner.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Amount *</label>
+                        <input
+                            type="number"
+                            required
+                            step="0.01"
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-900"
+                            placeholder="0.00"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                            <input
+                                type="date"
+                                required
+                                value={formData.payment_date}
+                                onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Method</label>
+                            <select
+                                value={formData.payment_method}
+                                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-700"
+                            >
+                                <option value="Cash">Cash</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                        <textarea
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none h-20 text-slate-700"
+                            placeholder="Add notes..."
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="is_completed"
+                            checked={formData.is_completed}
+                            onChange={(e) => setFormData({ ...formData, is_completed: e.target.checked })}
+                            className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                        />
+                        <label htmlFor="is_completed" className="text-sm font-medium text-slate-700 cursor-pointer">
+                            Mark as Completed
+                        </label>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-semibold shadow-sm text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {submitting ? (
+                            <>
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Saving...</span>
+                            </>
+                        ) : (
+                            'Add Payment'
+                        )}
+                    </button>
+                </form>
+            </Modal>
         </div>
     );
 };
