@@ -47,10 +47,14 @@ export const useNotifications = () => {
         // 2. FCM Setup
         const setupFCM = async () => {
             try {
-                // requestForToken handles checking for service worker and reusing the correct registration
-                const token = await requestForToken();
-                if (token) {
-                    await notificationAPI.saveFCMToken(token);
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const token = await requestForToken();
+                    if (token) {
+                        await notificationAPI.saveFCMToken(token);
+                    }
+                } else {
+                    console.log('Notification permission denied');
                 }
             } catch (error) {
                 console.error('FCM Setup Failed:', error);
@@ -63,14 +67,35 @@ export const useNotifications = () => {
         let unsubscribeFCM: (() => void) | undefined;
         if (messaging) {
             unsubscribeFCM = onMessage(messaging, (payload) => {
-                console.log('FCM Foreground Message:', payload);
-                const { title, body } = payload.notification || {};
-                if (title || body) {
-                    // Start with a generic toast, avoiding duplication if possible (complex w/ separate WS)
-                    // For now, just show it. Mobile vs Desktop behavior might vary.
-                    toast.info(`${title ? title + ': ' : ''}${body}`);
+                console.log('FCM Foreground Message (logged only):', payload);
+
+                // Optional: If you want foreground system notifications,
+                // uncomment this block, but be careful of duplicates:
+                /*
+                const title =
+                    payload.notification?.title ||
+                    payload.data?.title ||
+                    'New Notification';
+
+                const body =
+                    payload.notification?.body ||
+                    payload.data?.body ||
+                    payload.data?.message ||
+                    '';
+
+                if (Notification.permission === 'granted' && body) {
+                    try {
+                        new Notification(title, {
+                            body,
+                            icon: payload.data?.icon || 'https://admin.fernrie.com/logo.png'
+                        });
+                    } catch (e) {
+                        console.error('System notification failed', e);
+                    }
                 }
+                */
             });
+
         }
 
         return () => {
