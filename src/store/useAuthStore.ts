@@ -95,6 +95,25 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => storage),
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+        rememberMe: state.rememberMe,
+        isAdmin: state.isAdmin,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          console.log('[Auth] State rehydrated successfully:', {
+            isAuthenticated: state.isAuthenticated,
+            hasUser: !!state.user,
+            hasTokens: !!(state.accessToken && state.refreshToken),
+          });
+        } else {
+          console.log('[Auth] No state to rehydrate');
+        }
+      },
     }
   )
 );

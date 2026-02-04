@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { useAuthPersistence } from './hooks/useAuthPersistence';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Billing from './pages/Billing';
@@ -19,6 +20,8 @@ import BillingDetail from './pages/BillingDetail';
 import ServiceDetail from './pages/ServiceDetail';
 
 function App() {
+  // Validate auth state on app load
+  useAuthPersistence();
   return (
     <Router>
       <AuthProvider>
